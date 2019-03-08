@@ -62,29 +62,14 @@ export default class HomeScreen extends React.Component {
     componentWillMount() {
 
         this.setState({ requestingLocation: true });
-        if (Platform.OS === 'android' && !Constants.isDevice) {
-            this.setState({
-                errorMessage: 'Oops, this will not work on Sketch in an Android emulator. Try it on your device!',
-            });
-        } else {
-            this._getLocationAsync();
-        }
+
+        this._getLocationAsync();
+
     }
 
-    _getLocationAsync = async () => {
-        let { status } = await Permissions.askAsync(Permissions.LOCATION);
-        if (status !== 'granted') {
-            this.setState({
-                errorMessage: 'Permission to access location was denied',
-            });
-        }
 
-        let location = await Location.getCurrentPositionAsync({});
-        this.setState({ location, requestingLocation: false });
-    };
 
     _getLocationAsync = async () => {
-        this.setState({ location: 'fetching...' })
         const permission = await Permissions.askAsync(Permissions.LOCATION)
         const providerStatus = await Location.getProviderStatusAsync()
         this.setState({ permission, providerStatus })
@@ -102,23 +87,18 @@ export default class HomeScreen extends React.Component {
 
             this.setState({ location })
         } catch (err) {
-            this.setState({ location: err.message })
+            this.setState({ errorMessage: err.message })
         }
     }
 
 
 
     createBadges = () => {
-
         return this.state.hashtags.map((elem, i)=>
-
             <Badge  key={i}
-                    badgeStyle={{backgroundColor: '#8c1515'}}
+                    badgeStyle={{backgroundColor: Colors.secondaryColor}}
                     value={elem}/>
         )
-
-
-
     }
 
     handleText = (inputText) => {
@@ -150,9 +130,7 @@ export default class HomeScreen extends React.Component {
             return !this.input.isFocused();
         }
     }
-    componentDidUpdate() {
-        console.log("hey")
-    }
+
     render() {
 
 
@@ -174,66 +152,66 @@ export default class HomeScreen extends React.Component {
                 </View>
 
             ) : (
-            <View style={styles.container}>
+                <View style={styles.container}>
 
 
 
-                <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-                    {this.state.text === "" ? <View style={styles.welcomeContainer}>
-                        <Text style={styles.getStartedText}>Welcome 0123456 </Text>
+                    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+                        {this.state.text === "" ? <View style={styles.welcomeContainer}>
+                            <Text style={styles.getStartedText}>Welcome 0123456 </Text>
 
-                        <View style={[styles.codeHighlightContainer, styles.homeScreenFilename]}>
+                            <View style={[styles.codeHighlightContainer, styles.homeScreenFilename]}>
 
-                            <MonoText style={styles.codeHighlightText}>{text}</MonoText>
+                                <MonoText style={styles.codeHighlightText}>{text}</MonoText>
+                            </View>
+
+
+
+                        </View>: undefined}
+
+                        {this.state.text !== "" ? <Button
+                            onPress={ this.submitCall}
+                            containerStyle={{alignSelf: 'flex-end', marginVertical: 5 , marginRight: 24}}
+                            buttonStyle={{backgroundColor: 'white', alignSelf: 'flex-start'}}
+                            title="Send"
+                            titleStyle={{fontFamily: 'space-mono', color: Colors.secondaryColor}}
+                            colo
+
+                        /> : undefined}
+
+                        <View style={}>
+
+                            {this.createBadges()}
                         </View>
 
+                        {this.state.location !== null ? <View style={styles.inputStyle}>
+                            <Input
+                                placeholder='Input text'
+                                leftIcon={{ type: 'font-awesome', name: 'chevron-right', size: 20 }}
+                                inputContainerStyle={styles.inputContainerStyle}
+                                ref={input => {
+                                    this.input = input;
+                                }}
+                                onLayout={() => this.setState({layout: true})}
+                                multiline={true}
+                                leftIconContainerStyle={styles.leftIconContainerStyle}
+                                inputStyle={{alignSelf: 'flex-end', minHeight: 20}}
+                                onChangeText={(text) => this.handleText(text) }
+                                value={this.state.text}
+                                maxLength={200}
+                                keyboardType={Platform.OS === 'ios' ? 'twitter' : 'default'}
+                                onFocus={(e) => console.log(e)}
+                            />
 
-
-                    </View>: undefined}
-
-                    {this.state.text !== "" ? <Button
-                        onPress={ this.submitCall}
-                        containerStyle={{alignSelf: 'flex-end', marginVertical: 5 , marginRight: 24}}
-                        buttonStyle={{backgroundColor: 'white', alignSelf: 'flex-start'}}
-                        title="Send"
-                        titleStyle={{fontFamily: 'space-mono', color: '#8c1515'}}
-                        colo
-
-                    /> : undefined}
-
-                    <View style={{flexDirection: 'row', marginHorizontal: 24, flexWrap: 'wrap'}}>
-
-                        {this.createBadges()}
-                    </View>
-
-                    {this.state.location !== null ? <View style={styles.inputStyle}>
-                        <Input
-                            placeholder='Input text'
-                            leftIcon={{ type: 'font-awesome', name: 'chevron-right', size: 20 }}
-                            inputContainerStyle={{borderColor: '#fff', justifyContent: 'flex-start'}}
-                            ref={input => {
-                                this.input = input;
-                            }}
-                            onLayout={() => this.setState({layout: true})}
-                            multiline={true}
-                            leftIconContainerStyle={{alignSelf: 'flex-end', alignItems: 'flex-end', justifyContent: 'flex-end', marginRight: 5}}
-                            inputStyle={{alignSelf: 'flex-end', minHeight: 20}}
-                            onChangeText={(text) => this.handleText(text) }
-                            value={this.state.text}
-                            maxLength={200}
-                            keyboardType={Platform.OS === 'ios' ? 'twitter' : 'default'}
-                            onFocus={(e) => console.log(e)}
-                        />
-
-                    </View> : undefined }
+                        </View> : undefined }
 
 
 
-                </ScrollView>
+                    </ScrollView>
 
 
-            </View>
-    );
+                </View>
+            );
     }
 
 
@@ -244,10 +222,25 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
     },
+    badgeContainer: {
+        flexDirection: 'row',
+        marginHorizontal: 24,
+        flexWrap: 'wrap'
+    },
+    inputContainerStyle: {
+        borderColor: '#fff',
+        justifyContent: 'flex-start'
+    },
     inputStyle: {
         width: '100%',
         borderBottomWidth: 0
 
+    },
+    leftIconContainerStyle: {
+        alignSelf: 'flex-end',
+        alignItems: 'flex-end',
+        justifyContent: 'flex-end',
+        marginRight: 5
     },
     developmentModeText: {
         marginBottom: 20,

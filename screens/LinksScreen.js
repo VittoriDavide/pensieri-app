@@ -78,12 +78,6 @@ export default class LinksScreen extends React.Component {
             this.setState({ location: err.message })
         }
     }
-    //
-    // format-align-center
-    // format-align-center
-    // format-align-left
-    // format-align-right
-    // format-line-style
 
 
     cardElementRender = (elem, i) => {
@@ -115,9 +109,9 @@ export default class LinksScreen extends React.Component {
 
                 {_.isEmpty(this.state.messages) ?
                     <View>
-                    <Text style={{fontFamily: 'space-mono', textAlign: 'center', fontSize: 18, marginTop: 20, marginHorizontal: 20}}>
-                       We weren't able to see any messages in your current location   </Text>
-                        <Text style={{fontFamily: 'space-mono', fontWeight: 'bold', textAlign: 'center', fontSize: 18, marginTop: 20, marginHorizontal: 20}}>
+                        <Text style={styles.textLocation}>
+                            We weren't able to see any messages in your current location   </Text>
+                        <Text style={styles.textlocationBold}>
                             Try posting one!"   </Text>
                     </View>
                     : undefined}
@@ -141,5 +135,19 @@ const styles = StyleSheet.create({
     name: {
         textAlign: 'center',
         fontFamily: 'space-mono'
-    }
+    },
+    textLocation: {
+        fontFamily: 'space-mono',
+        textAlign: 'center',
+        fontSize: 18,
+        marginTop: 20,
+        marginHorizontal: 20
+    },
+    textlocationBold:
+        {fontFamily: 'space-mono',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            fontSize: 18,
+            marginTop: 20,
+            marginHorizontal: 20}
 });

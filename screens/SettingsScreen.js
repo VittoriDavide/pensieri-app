@@ -4,11 +4,11 @@ import {  StyleSheet, View, Dimensions } from 'react-native';
 import { DangerZone } from 'expo';
 import {Text,Icon, Button} from 'react-native-elements';
 const { Lottie } = DangerZone;
-import animate from '../animation-w72-h72'
+import Colors from "../constants/Colors";
 
 export default class SettingsScreen extends React.Component {
     state = {
-        animation: animate,
+        animation: "",
     };
     static navigationOptions = {
         header: null,
@@ -27,7 +27,7 @@ export default class SettingsScreen extends React.Component {
                 <Text style={styles.textStyle}>3 years 122 days to die.</Text>
                 <Button
                     containerStyle={{alignSelf: 'flex-end', marginVertical: 20}}
-                    buttonStyle={{backgroundColor: '#8c1515', alignSelf: 'flex-end'}}
+                    buttonStyle={{backgroundColor: Colors.secondaryColor, alignSelf: 'flex-end'}}
                     title="Give me life"
                     textStyle={{fontFamily: 'space-mono'}}
                     raised
