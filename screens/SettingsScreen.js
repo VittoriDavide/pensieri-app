@@ -4,11 +4,12 @@ import {  StyleSheet, View, Dimensions } from 'react-native';
 import { DangerZone } from 'expo';
 import {Text,Icon, Button} from 'react-native-elements';
 const { Lottie } = DangerZone;
+import animate from '../animation-w72-h72'
 import Colors from "../constants/Colors";
 
 export default class SettingsScreen extends React.Component {
     state = {
-        animation: "",
+        animation: animate,
     };
     static navigationOptions = {
         header: null,

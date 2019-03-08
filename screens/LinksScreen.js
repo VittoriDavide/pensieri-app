@@ -6,8 +6,10 @@ import {Card, Image, Text} from 'react-native-elements';
 import _ from 'lodash';
 const { Lottie } = DangerZone;
 import animate from '../animation-w72-h72'
+import {connect} from "react-redux";
+import { saveGPS } from '../src/actions/gpsActions';
 
-export default class LinksScreen extends React.Component {
+class LinksScreen extends React.Component {
     static navigationOptions = {
         header: null,
     };
@@ -27,9 +29,10 @@ export default class LinksScreen extends React.Component {
 
 
     getPosts = () => {
+        console.log("HARSH", this.props.longitude, this.props.latitude);
         this.setState({refreshing: true});
 
-        fetch('http://54.38.65.73/get?' + 'latitude=' + this.state.location.coords.latitude + ' &longitude=' + this.state.location.coords.longitude, {
+        fetch('http://54.38.65.73/get?' + 'latitude=' + this.props.latitude + ' &longitude=' + this.props.longitude, {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
@@ -47,12 +50,7 @@ export default class LinksScreen extends React.Component {
             })
     }
 
-    componentWillMount() {
 
-        this.setState({ requestingLocation: true });
-        this._getLocationAsync();
-
-    }
 
 
     _getLocationAsync = async () => {
@@ -97,8 +95,14 @@ export default class LinksScreen extends React.Component {
 
     render() {
         console.log(this.state.messages)
+        return this.props.latitude === "" ?
+            <View>
+                <Text style={styles.textLocation}>
+                    The app is calculating </Text>
+                <Text style={styles.textlocationBold}>
+                   Your current position!"   </Text>
+            </View> : (
 
-        return (
             <ScrollView
                 refreshControl={
                     <RefreshControl
@@ -122,6 +126,18 @@ export default class LinksScreen extends React.Component {
         );
     }
 }
+
+
+const mapStateToProps = state => ({
+    longitude: state.Gps.longitude,
+    latitude: state.Gps.latitude
+});
+
+const mapDispatchToProps = dispatch =>({
+    saveGPS: (longitude, latitude) => dispatch(saveGPS(longitude, latitude))
+});
+
+export default connect(mapStateToProps, mapDispatchToProps )(LinksScreen)
 
 const styles = StyleSheet.create({
     container: {

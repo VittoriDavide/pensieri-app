@@ -13,12 +13,15 @@ import {
 import { Constants, Location, Permissions } from 'expo';
 
 import { Input, Icon, Badge, Button } from 'react-native-elements';
-
+import { connect } from 'react-redux';
 
 import { MonoText } from '../components/StyledText';
 import Colors from "../constants/Colors";
+import Gps from "../src/reducers/gpsReducer";
 
-export default class HomeScreen extends React.Component {
+import { saveGPS } from '../src/actions/gpsActions';
+
+ class HomeScreen extends React.Component {
     static navigationOptions = {
         header: null,
     };
@@ -86,6 +89,7 @@ export default class HomeScreen extends React.Component {
             const location = await Promise.race([locationPromise, timeout])
 
             this.setState({ location })
+            this.props.saveGPS(location.coords.longitude, location.coords.latitude)
         } catch (err) {
             this.setState({ errorMessage: err.message })
         }
@@ -179,7 +183,7 @@ export default class HomeScreen extends React.Component {
 
                         /> : undefined}
 
-                        <View style={}>
+                        <View style={styles.badgeContainer}>
 
                             {this.createBadges()}
                         </View>
@@ -216,6 +220,16 @@ export default class HomeScreen extends React.Component {
 
 
 }
+
+const mapStateToProps = state => ({
+    longitude: state.Gps.longitude,
+    latitude: state.Gps.latitude
+});
+
+const mapDispatchToProps = dispatch =>({
+    saveGPS: (longitude, latitude) => dispatch(saveGPS(longitude, latitude))
+});
+export default connect(mapStateToProps, mapDispatchToProps )(HomeScreen)
 
 const styles = StyleSheet.create({
     container: {
