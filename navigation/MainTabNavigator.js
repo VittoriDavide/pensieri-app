@@ -1,6 +1,6 @@
 import React from 'react';
 import { Platform } from 'react-native';
-import { createStackNavigator, createMaterialTopTabNavigator, MaterialTopTabBar } from 'react-navigation';
+import { createStackNavigator, createSwitchNavigator,  createMaterialTopTabNavigator, MaterialTopTabBar, createBottomTabNavigator, BottomTabBar } from 'react-navigation';
 
 import TabBarIcon from '../components/TabBarIcon';
 import HomeScreen from '../screens/HomeScreen';
@@ -17,18 +17,20 @@ HomeStack.navigationOptions = {
     tabBarLabel: 'YOU',
     tabBarOptions: {
         showIcon: true,
-        activeTintColor: Colors.tintColor,
-        inactiveTintColor: Colors.tintColor + "AA",
-
-        style: {
-          backgroundColor: 'white'
+        activeTintColor: '#00FFE5',
+        inactiveTintColor: 'white',
+        indicatorStyle: {
+            backgroundColor: '#00FFE5',
         },
-        indicatorStyle: { backgroundColor: Colors.tintColor, }
+        style: {
+            backgroundColor: Colors.tintColor
+        },
     },
     tabBarIcon: ({ focused }) => (
         <TabBarIcon
             focused={focused}
-            name={'format-align-left'}
+            name={'filetext1'}
+            type={'antdesign'}
         />
     ),
 };
@@ -41,49 +43,21 @@ LinksStack.navigationOptions = {
     tabBarLabel: 'OTHER',
     tabBarOptions: {
         showIcon: true,
+        activeTintColor: '#00FFE5',
+        inactiveTintColor: 'white',
         indicatorStyle: {
-          color: Colors.tintColor,
+            backgroundColor: '#00FFE5',
         },
-        activeTintColor: Colors.tintColor,
-        inactiveTintColor: Colors.tintColor + "AA",
 
         style: {
-            backgroundColor: 'white'
+            backgroundColor: Colors.tintColor
         },
-        indicatorStyle: { backgroundColor: Colors.tintColor, }
     },
     tabBarIcon: ({ focused }) => (
         <TabBarIcon
             focused={focused}
-            type={'material-community'}
-            name={ 'format-align-center' }
-        />
-    ),
-};
-const LocationStack = createStackNavigator({
-    Location: LocationScreen,
-});
-
-LocationScreen.navigationOptions = {
-    tabBarLabel: 'Location',
-    tabBarOptions: {
-        showIcon: true,
-        indicatorStyle: {
-            color: Colors.tintColor,
-        },
-        activeTintColor: Colors.tintColor,
-        inactiveTintColor: Colors.tintColor + "AA",
-
-        style: {
-            backgroundColor: 'white'
-        },
-        indicatorStyle: { backgroundColor: Colors.tintColor, }
-    },
-    tabBarIcon: ({ focused }) => (
-        <TabBarIcon
-            focused={focused}
-            type={'material-community'}
-            name={ 'format-align-center' }
+            type={'antdesign'}
+            name={ 'copy1' }
         />
     ),
 };
@@ -93,42 +67,32 @@ const SettingsStack = createStackNavigator({
 });
 
 SettingsStack.navigationOptions = {
-    tabBarLabel: 'OWN',
+    tabBarLabel: 'US',
     tabBarOptions: {
         showIcon: true,
-        activeTintColor: Colors.tintColor,
-        inactiveTintColor: Colors.tintColor + "AA",
+        activeTintColor: '#00FFE5',
+        inactiveTintColor: 'white',
+        indicatorStyle: {
+            backgroundColor: '#00FFE5',
+        },
 
 
         style: {
-            backgroundColor: 'white'
+            backgroundColor: Colors.tintColor
         },
-        indicatorStyle: { backgroundColor: Colors.tintColor, }
     },
     tabBarIcon: ({ focused }) => (
         <TabBarIcon
             focused={focused}
-            type={'material-community'}
-            name={'format-align-right'}
+            type={'antdesign'}
+            name={'database'}
         />
     ),
 };
 
-export default createMaterialTopTabNavigator({
+
+export default createBottomTabNavigator({
     HomeStack,
     LinksStack,
     SettingsStack,
-},{
-    tabBarComponent: props => {
-        const backgroundColor = props.position.interpolate({
-            inputRange: [0,1,2],
-            outputRange: ['#fff','#fff','#fff'],
-        })
-        return (
-            <MaterialTopTabBar
-                {...props}
-                style={{ backgroundColor, borderBottomColor: 'grey' }}
-            />
-        );
-    },tabBarOptions: { indicatorStyle: { backgroundColor: 'transparent', } }
 });

@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     View,
     ActivityIndicator,
+    BackHandler
 
 } from 'react-native';
 import { Constants, Location, Permissions } from 'expo';
@@ -18,12 +19,28 @@ import { connect } from 'react-redux';
 import { MonoText } from '../components/StyledText';
 import Colors from "../constants/Colors";
 import Gps from "../src/reducers/gpsReducer";
-
+import Headers from "../constants/Headers"
 import { saveGPS } from '../src/actions/gpsActions';
+import {configCall, getMessages, sendMessage, submitting} from '../src/actions/messagesActions';
+import i18n from 'i18n-js';
 
- class HomeScreen extends React.Component {
+class HomeScreen extends React.Component {
     static navigationOptions = {
-        header: null,
+        headerStyle: {
+            backgroundColor: Colors.tintColor,
+
+        },
+        title: `memoriae`,
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+            fontWeight: 'bold',
+            fontFamily: 'noto-sans-bold',
+            fontSize: 26,
+            alignSelf: 'center',
+            justifyContent: 'center',
+            textAlign:"center",
+            flex:1
+        },
     };
 
     constructor(props) {
@@ -40,26 +57,38 @@ import { saveGPS } from '../src/actions/gpsActions';
     }
 
     submitCall = () => {
-        this.setState({submitting: true});
-        fetch('http://54.38.65.73/submit', {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-App-Version': 11
-            },
-            body: JSON.stringify({
-                message: this.state.text,
-                hashtag: this.state.hashtags,
-                latitude: this.state.location.coords.latitude,
-                longitude: this.state.location.coords.longitude,
-            }),
-        }).then((response) => response.json())
-            .then((responseJson) => {
 
-                console.log(responseJson);
-                this.setState({text: '', hashtags: [], submitting: false})
-            })
+        this.props.submitting();
+
+        Promise.all(
+            this.props.sendMessage(this.state.text, this.state.hashtags, this.state.location.coords.longitude, this.state.location.coords.latitude, this.props.screenProps.user),
+        ).then( () => {
+
+                setTimeout(
+                    () =>  this.props.getMessages(this.state.location.coords.longitude, this.state.location.coords.latitude, this.props.searchHashtag),
+                    200
+                );
+            }
+        ).then( () => {
+                this.props.navigation.navigate("LinksStack")
+                this.setState({hashtags: [], text: ""})
+
+            }
+        )
+
+    };
+
+    componentDidMount() {
+        BackHandler.addEventListener('hardwareBackPress', this.handleBackPress);
+    }
+
+    componentWillUnmount() {
+        BackHandler.removeEventListener('hardwareBackPress', this.handleBackPress);
+    }
+
+    handleBackPress = () => {
+        BackHandler.exitApp();  // works best when the goBack is async
+        return true;
     }
 
     componentWillMount() {
@@ -89,7 +118,9 @@ import { saveGPS } from '../src/actions/gpsActions';
             const location = await Promise.race([locationPromise, timeout])
 
             this.setState({ location })
-            this.props.saveGPS(location.coords.longitude, location.coords.latitude)
+            this.props.saveGPS(location.coords.longitude, location.coords.latitude);
+            this.props.configCall(location.coords.longitude, location.coords.latitude)
+            this.props.getMessages(location.coords.longitude, location.coords.latitude, this.props.searchHashtag)
         } catch (err) {
             this.setState({ errorMessage: err.message })
         }
@@ -101,7 +132,10 @@ import { saveGPS } from '../src/actions/gpsActions';
         return this.state.hashtags.map((elem, i)=>
             <Badge  key={i}
                     badgeStyle={{backgroundColor: Colors.secondaryColor}}
-                    value={elem}/>
+                    value={elem}
+                    textStyle={{fontSize: 14, fontFamily: 'noto-sans-reg'}}
+                    badgeStyle={{backgroundColor: Colors.secondaryColor, borderRadius: 7, height: 25 }}
+            />
         )
     }
 
@@ -121,7 +155,6 @@ import { saveGPS } from '../src/actions/gpsActions';
 
     }
 
-    //If the layout is not ready we cannot call this.input
     shouldShowText = () => {
         console.log("HEL");
         if(!this.state.layout) {
@@ -138,17 +171,17 @@ import { saveGPS } from '../src/actions/gpsActions';
     render() {
 
 
-        let text = 'Calculating your current position...';
+        let text = i18n.t('calculating') ;
         if (this.state.errorMessage) {
             text = this.state.errorMessage;
         } else if (this.state.location) {
             console.log(this.state.location);
 
-            text = "Position Found!";
+            text = i18n.t('position_found');
         }
 
 
-        return this.state.submitting ?
+        return this.props.submitted ?
 
             (
                 <View style={styles.container}>
@@ -157,12 +190,13 @@ import { saveGPS } from '../src/actions/gpsActions';
 
             ) : (
                 <View style={styles.container}>
+                    <View style={{backgroundColor: Colors.secondaryColor, height: 10}} />
 
 
 
                     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
                         {this.state.text === "" ? <View style={styles.welcomeContainer}>
-                            <Text style={styles.getStartedText}>Welcome 0123456 </Text>
+                            <Text style={styles.getStartedText}>{i18n.t('welcome', {user: this.props.screenProps.user})} </Text>
 
                             <View style={[styles.codeHighlightContainer, styles.homeScreenFilename]}>
 
@@ -176,10 +210,10 @@ import { saveGPS } from '../src/actions/gpsActions';
                         {this.state.text !== "" ? <Button
                             onPress={ this.submitCall}
                             containerStyle={{alignSelf: 'flex-end', marginVertical: 5 , marginRight: 24}}
-                            buttonStyle={{backgroundColor: 'white', alignSelf: 'flex-start'}}
+                            buttonStyle={{backgroundColor: Colors.secondaryColor, alignSelf: 'flex-start'}}
                             title="Send"
-                            titleStyle={{fontFamily: 'space-mono', color: Colors.secondaryColor}}
-                            colo
+                            titleStyle={{fontFamily: 'space-mono' }}
+                            raised
 
                         /> : undefined}
 
@@ -191,7 +225,8 @@ import { saveGPS } from '../src/actions/gpsActions';
                         {this.state.location !== null ? <View style={styles.inputStyle}>
                             <Input
                                 placeholder='Input text'
-                                leftIcon={{ type: 'font-awesome', name: 'chevron-right', size: 20 }}
+                                leftIcon={{ type: 'font-awesome', name: 'chevron-right',
+                                    size: 20, color: this.state.text === "" ? 'black' : Colors.secondaryColor }}
                                 inputContainerStyle={styles.inputContainerStyle}
                                 ref={input => {
                                     this.input = input;
@@ -223,13 +258,20 @@ import { saveGPS } from '../src/actions/gpsActions';
 
 const mapStateToProps = state => ({
     longitude: state.Gps.longitude,
-    latitude: state.Gps.latitude
+    latitude: state.Gps.latitude,
+    submitted: state.Message.submitted,
+    searchHashtag: state.Message.searchHashtag
 });
 
 const mapDispatchToProps = dispatch =>({
-    saveGPS: (longitude, latitude) => dispatch(saveGPS(longitude, latitude))
+    saveGPS: (longitude, latitude) => dispatch(saveGPS(longitude, latitude)),
+    configCall: (longitude, latitude) => dispatch(configCall(longitude, latitude)),
+    getMessages: (longitude, latitude, hashtag) => dispatch(getMessages(longitude, latitude, hashtag)),
+    sendMessage: (message, hashtag, longitude, latitude, idSubmit) => dispatch(sendMessage(message, hashtag, longitude, latitude, idSubmit)),
+    submitting: () => dispatch(submitting())
+
 });
-export default connect(mapStateToProps, mapDispatchToProps )(HomeScreen)
+export default connect(mapStateToProps, mapDispatchToProps)(HomeScreen)
 
 const styles = StyleSheet.create({
     container: {
@@ -292,17 +334,19 @@ const styles = StyleSheet.create({
     },
     codeHighlightText: {
         color: 'rgba(96,100,109, 0.8)',
+        fontFamily: 'noto-sans-light',
+        fontSize: 20
     },
     codeHighlightContainer: {
-        backgroundColor: 'rgba(0,0,0,0.05)',
         borderRadius: 3,
         paddingHorizontal: 4,
+
     },
     getStartedText: {
         fontSize: 28,
-        color: 'rgba(96,100,109, 1)',
-        textAlign: 'left',
-        fontFamily: 'space-mono',
+        color: 'black',
+        textAlign: 'center',
+        fontFamily: 'noto-sans-black',
         fontWeight: 'bold',
         marginLeft: 7,
 

@@ -3,15 +3,22 @@ import { createAppContainer, createSwitchNavigator, createStackNavigator } from 
 
 import MainTabNavigator from './MainTabNavigator';
 
+import WelcomeScreen from '../screens/WelcomeScreen'
+
+import Colors from '../constants/Colors'
+
 export default createAppContainer(createStackNavigator({
         // You could add another route here for authentication.
         // Read more at https://reactnavigation.org/docs/en/auth-flow.html
+        Welcome: {screen: WelcomeScreen},
         Main: {
             screen: MainTabNavigator,
             navigationOptions: () => ({
                 title: `memoriae`,
                 headerBackTitle: null,
-
+                headerLeft: null,
+                gesturesEnabled: false,
+                header: null,
 
             }),
         }
@@ -19,15 +26,18 @@ export default createAppContainer(createStackNavigator({
     },{
         defaultNavigationOptions: {
             headerStyle: {
-                backgroundColor: '#293133',
+                backgroundColor: Colors.tintColor,
 
             },
             headerTintColor: '#fff',
             headerTitleStyle: {
                 fontWeight: 'bold',
-                fontFamily: 'space-mono',
-                fontSize: 26
-
+                fontFamily: 'noto-sans-bold',
+                fontSize: 26,
+                alignSelf: 'center',
+                justifyContent: 'center',
+                textAlign:"center",
+                flex:1
             }
         }
     }

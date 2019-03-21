@@ -1,2 +1,16 @@
 
-export const GET_GPS = "GET_GPS"
+export const GET_GPS = "GET_GPS";
+
+export const GET_MESSAGES = "GET_MESSAGES";
+export const GET_MESSAGES_FAIL = "GET_MESSAGES_FAIL";
+
+export const SUBMIT_MESSAGE = "SUBMIT_MESSAGE";
+export const SUBMIT_MESSAGE_FAIL = "SUBMIT_MESSAGE_FAIL";
+
+export const DELETE_MESSAGE = "DELETE_MESSAGE";
+export const REFRESHING = "REFRESHING";
+export const SUBMITTING = "SUBMITTING";
+export const NOTIFY_MESSAGE = "NOTIFY_MESSAGE";
+export const ADD_SEARCH_HASHTAG = "ADD_SEARCH_HASHTAG";
+export const CONFIG_CALL = "CONFIG_CALL";
+
