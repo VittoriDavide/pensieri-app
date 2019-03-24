@@ -4,7 +4,7 @@ Write message and left your trace in the world
 
 ## Getting Started
 
-These a React Native App bootstrapped with Expo.
+These is a React Native App bootstrapped with Expo.
 
 ### Prerequisites
 
