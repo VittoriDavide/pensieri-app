@@ -9,8 +9,9 @@ import thunk from 'redux-thunk';
 import { Localization } from 'expo';
 import i18n from 'i18n-js';
 import {en, it, es} from './assets/i18n/localization';
-store = createStore(rootReducer, applyMiddleware(thunk));
 
+
+store = createStore(rootReducer, applyMiddleware(thunk));
 
 i18n.fallbacks = true;
 i18n.translations = { it, en, es };
@@ -30,9 +31,7 @@ export default class App extends React.Component {
     }
 
     componentWillMount() {
-
         this.setState({user: this.getRandomInt(1000000)})
-
     }
 
     render() {

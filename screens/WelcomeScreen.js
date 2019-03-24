@@ -54,15 +54,15 @@ const styles = StyleSheet.create({
 const slides = [
     {
         key: 'somethun',
-        title: i18n.t('title_1_splash'),
-        text: i18n.t('text_1_splash'),
+        title: 'title_1_splash',
+        text: 'text_1_splash',
         icon: 'comment-text-multiple',
         colors: ['#009485', '#40B1A5'],
     },
     {
         key: 'somethun1',
-        title: i18n.t('title_2_splash'), // 'Completely Anonymous',
-        text: i18n.t('text_2_splash'),
+        title: 'title_2_splash', // 'Completely Anonymous',
+        text: 'text_2_splash',
             //'Your message are entirely anonymous, you should not use any name or personal information of others.',
         icon: 'eye-off',
         colors: ['#009485', '#40B1A5'],
@@ -160,8 +160,8 @@ export default class WelcomeScreen extends React.Component {
                     : undefined}
 
                 <View>
-                    <Text style={styles.title}>{props.title}</Text>
-                    <Text style={styles.text}>{props.text}</Text>
+                    <Text style={styles.title}>{i18n.t(props.title)}</Text>
+                    <Text style={styles.text}>{i18n.t(props.text)}</Text>
                 </View>
             </LinearGradient>
         )};

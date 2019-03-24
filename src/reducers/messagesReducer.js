@@ -8,7 +8,8 @@ const INITIAL_STATE = {
     lastMessage: {},
     searchHashtag: [],
     hourRate: 0,
-    lifetime: 0
+    lifetime: 0,
+    hashes: []
 };
 
 import {
@@ -18,13 +19,12 @@ import {
     REFRESHING,
     SUBMIT_MESSAGE,
     SUBMITTING,
-    CONFIG_CALL
+    CONFIG_CALL, FILTER_TAGS, DELETE_FILTER_TAGS
 } from "../actions/types";
 
 const Message  =  (state = INITIAL_STATE, action) => {
     switch (action.type) {
         case GET_MESSAGES:
-            console.log("Getting", JSON.parse(action.payload.messages._bodyInit).messages)
             let messages =JSON.parse(action.payload.messages._bodyInit).messages;
             if(messages !== undefined && messages !== null) {
                 return {
@@ -37,7 +37,6 @@ const Message  =  (state = INITIAL_STATE, action) => {
             case SUBMITTING:
         return { ...state,  submitted: true }
         case SUBMIT_MESSAGE:
-            console.log("Submitting", JSON.parse(action.payload._bodyInit))
             return { ...state, idLastMessage: JSON.parse(action.payload._bodyInit).id,
                 deleteTokenLastMessage: JSON.parse(action.payload._bodyInit).deleteToken,
                 lastMessage: JSON.parse(action.payload._bodyInit).requestToResponseMapping, submitted: false }
@@ -46,8 +45,19 @@ const Message  =  (state = INITIAL_STATE, action) => {
         case ADD_SEARCH_HASHTAG:
             return {...state, searchHashtag: action.payload}
         case CONFIG_CALL:
-            console.log("condif", JSON.parse(action.payload._bodyInit).serverInfo.costoOrario)
             return {...state, hourRate: JSON.parse(action.payload._bodyInit).serverInfo.costoOrario, lifetime: JSON.parse(action.payload._bodyInit).serverInfo.lifetime}
+
+        case FILTER_TAGS:
+            let hashes = JSON.parse(action.payload._bodyInit);
+            if(hashes !== undefined && hashes !== null && Array.isArray(hashes)) {
+                return {
+                    ...state, hashes
+                }
+            } else return state ;
+
+        case DELETE_FILTER_TAGS:
+            return {...state, hashes: []}
+
 
         default:
             return state;

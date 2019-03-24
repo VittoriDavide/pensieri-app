@@ -36,6 +36,12 @@ export const en = {
     terms: "You accept the terms and condition",
     privacy: "You confirm you have read the privacy policy",
 
+
+
+    //NEWS
+    no_hashes_1: 'We weren\'t able to find any messages with the current hashtag',
+    no_hashes_2:"Try changing them!",
+
 };
 
 export const it = {

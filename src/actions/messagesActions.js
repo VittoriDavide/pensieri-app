@@ -7,10 +7,43 @@ import {
     SUBMIT_MESSAGE,
     GET_GPS,
     REFRESHING,
-    SUBMIT_MESSAGE_FAIL, SUBMITTING, NOTIFY_MESSAGE, ADD_SEARCH_HASHTAG, CONFIG_CALL
+    SUBMIT_MESSAGE_FAIL, SUBMITTING, NOTIFY_MESSAGE, ADD_SEARCH_HASHTAG, CONFIG_CALL, FILTER_TAGS, DELETE_FILTER_TAGS
 } from "./types";
 import Headers from "../../constants/Headers";
 import { Localization } from 'expo';
+
+const FETCH_RETRY=3;
+
+function fetch_retry(url, options, n=FETCH_RETRY) {
+
+    console.log("I'm repeating ", n)
+
+    return new Promise(function(resolve, reject) {
+
+            fetch(url, options)
+            .then( (res) => {
+
+                console.log("chocolate", res.status);
+
+                if(res.status === 429) {
+                    if (n === 1) return reject();
+
+                     setTimeout(() => resolve(fetch_retry(url, options, n - 1)), FETCH_RETRY+1-n * 500)
+                }else{
+                    resolve(res)
+                }
+            }).catch(function(error) {
+            console.log("errorchocolate", error);
+
+            if (n === 1) return reject(error);
+                setTimeout(resolve(fetch_retry(url, options, n - 1)), FETCH_RETRY+1-n*500)
+            })
+
+    })
+}
+
+
+
 
 
 function fetchMessages(latitude, longitude, hashtag=[], page=0) {
@@ -19,7 +52,7 @@ function fetchMessages(latitude, longitude, hashtag=[], page=0) {
     if(hashtag !== null || hashtag !== undefined){
         addHashtag = "&hashtag[]=" + hashtag.join(",")
     }
-    return fetch('http://54.38.65.73/core/get?' + 'latitude=' + latitude + ' &longitude=' + longitude + addHashtag + '&page=' + page, {
+    return fetch_retry('http://54.38.65.73/core/get?' + 'latitude=' + latitude + ' &longitude=' + longitude + addHashtag + '&page=' + page, {
         method: 'GET',
         headers: {
             Accept: 'application/json',
@@ -32,10 +65,7 @@ function fetchMessages(latitude, longitude, hashtag=[], page=0) {
 
 
 function configCallGET(latitude, longitude, hashtag=[]) {
-
-
-
-    return fetch('http://54.38.65.73/core/config?' + 'latitude=' + latitude + ' &longitude=' + longitude , {
+    return fetch_retry('http://54.38.65.73/core/config?' + 'latitude=' + latitude + ' &longitude=' + longitude , {
         method: 'GET',
         headers: {
             Accept: 'application/json',
@@ -47,7 +77,7 @@ function configCallGET(latitude, longitude, hashtag=[]) {
 }
 
 function deleteMessagePOST(deleteToken, idMessage) {
-    return  fetch('http://54.38.65.73/core/delete', {
+    return  fetch_retry('http://54.38.65.73/core/delete', {
         method: 'POST',
         headers: {
             Accept: 'application/json',
@@ -64,7 +94,7 @@ function deleteMessagePOST(deleteToken, idMessage) {
 }
 
 function notifyMessagePOST(idMessage) {
-    return  fetch('http://54.38.65.73/core/report', {
+    return  fetch_retry('http://54.38.65.73/core/report', {
         method: 'POST',
         headers: {
             Accept: 'application/json',
@@ -82,7 +112,7 @@ function notifyMessagePOST(idMessage) {
 function sendPOSTSubmit(message, hashtag,  longitude, latitude, idSubmit) {
 
     console.log("localization ", Localization.locale)
-    return  fetch('http://54.38.65.73/core/submit', {
+    return  fetch_retry('http://54.38.65.73/core/submit', {
         method: 'POST',
         headers: {
             Accept: 'application/json',
@@ -101,9 +131,33 @@ function sendPOSTSubmit(message, hashtag,  longitude, latitude, idSubmit) {
     })
 }
 
+function filterTagGET(message) {
+
+    return fetch_retry('http://54.38.65.73/core/filtertag?' + 'tag=' + message , {
+        method: 'GET',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-App-Version': Headers.AppVersion,
+            'X-App-Key': Headers.AppKey
+        }
+    })
+}
 
 
+export const deleteFilterHashTag = () => {
+    return ({
+        type: DELETE_FILTER_TAGS
+    })
+};
 
+
+const filterHashTag = (messages) => {
+    return ({
+        type: FILTER_TAGS,
+        payload: messages
+    })
+};
 
 
 const saveMessages = (messages, page) => {
@@ -193,8 +247,9 @@ export const getMessages = (longitude, latitude, hashtags, page=0) => {
 
     return function (dispatch) {
         return fetchMessages(latitude, longitude, hashtags, page).then(
-            message => dispatch(saveMessages(message,page)),
-            error => dispatch(errorMessage(error))
+            message => {             console.log("shit", message)
+                return dispatch(saveMessages(message,page))},
+            error => {}
         );
     };
 };
@@ -225,6 +280,17 @@ export const reportMessage = (idMessage) => {
     return function (dispatch) {
         return notifyMessagePOST(idMessage).then(
             message => dispatch(notifyMess(message)),
+            error => dispatch(errorSubmitting(error))
+        );
+    };
+};
+
+
+export const filterHash = (message) => {
+
+    return function (dispatch) {
+        return filterTagGET(message).then(
+            message => dispatch(filterHashTag(message)),
             error => dispatch(errorSubmitting(error))
         );
     };

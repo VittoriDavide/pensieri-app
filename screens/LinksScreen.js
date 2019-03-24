@@ -9,7 +9,14 @@ import animate from '../animation-w72-h72'
 import {connect} from "react-redux";
 import { saveGPS } from '../src/actions/gpsActions';
 import Headers from "../constants/Headers"
-import {addSearchHashtag, deleteMessage, getMessages, refreshing, reportMessage} from "../src/actions/messagesActions";
+import {
+    addSearchHashtag, deleteFilterHashTag,
+    deleteMessage,
+    filterHash,
+    getMessages,
+    refreshing,
+    reportMessage
+} from "../src/actions/messagesActions";
 import Colors from "../constants/Colors";
 import i18n from 'i18n-js';
 
@@ -66,39 +73,103 @@ class LinksScreen extends React.Component {
             refreshing: false,
             location: null,
             loading: false,
-            page: 0
+            page: 0,
+            search: ''
+
         }
     }
 
+    debounce = (func, wait, immediate)  => {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            var later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+    };
+
+    updateSearch = (search) =>{
+        if(search.length >= 3) this.debounce(this.props.filterHash(search.toLowerCase()), 500, false);
+        else {
+            this.props.deleteFilterHashTag();
+        }
+        this.setState({search});
+    };
+
+    renderHashFilter = ({item, i }) => {
+        return (
+        <View style={{ paddingRight: 15, paddingLeft: 10, height: 40,
+                  backgroundColor: Colors.tintColor,
+                  flexDirection: 'row', alignItems: 'center',
+                  justifyContent: 'space-around', alignContent: 'center',
+                  borderRight: 1,
+                  borderColor: 'white', marginBottom: 5}}>
+            <Text style={[styles.textLocation, {color: 'white'}]}>
+                {item}
+            </Text>
+            <Button
+                buttonStyle={{backgroundColor: 'transparent', padding: 0}}
+                containerStyle={{paddingLeft: 5}}
+                iconContainerStyle={{padding: 0}}
+                onPress={() => this.addHashtagToList(item)}
+                icon={
+                    <Icon
+                        name="search"
+                        size={20}
+                        color="white"
+                    />
+                }
+            />
+        </View>)
+    }
 
     renderSearch = () => {
         const { search } = this.state;
 
+
         return (
             <React.Fragment>
-
                 <View style={{backgroundColor: Colors.tintColor, height: 40}}/>
-            <View style={{height: 500}}>
-            <SearchBar
-                placeholder="Type Here..."
-                onChangeText={this.updateSearch}
-                value={search}
-            />
-            </View>
+                <View >
+                    <SearchBar
+                        placeholder="Type Here..."
+                        onChangeText={this.updateSearch}
+                        value={search}
+                        containerStyle={{backgroundColor: Colors.tintColor, borderTopColor: Colors.tintColor, borderBottomColor: Colors.tintColor}}
+                    />
+
+                    <View style={{backgroundColor: Colors.tintColor, marginBottom: 10}}>
+                    <FlatList
+                        horizontal
+                        data={this.props.hashes}
+                        renderItem={this.renderHashFilter}
+                        keyExtractor={(item, index) => { console.log("tetas fuera", index); return index } }
+                        bounces={false}
+
+                    />
+                    </View>
+
+
+                </View>
             </React.Fragment>
         );
     }
 
 
     getPosts = () => {
-        console.log("HARSH", this.props.longitude, this.props.latitude);
         this.props.refreshing();
         this.setState({page: 0});
         this.props.getMessages(this.props.longitude, this.props.latitude, this.props.searchHashtag);
     };
 
 
-     arraysEqual = (_arr1, _arr2) => {
+    arraysEqual = (_arr1, _arr2) => {
 
         if (!Array.isArray(_arr1) || ! Array.isArray(_arr2) || _arr1.length !== _arr2.length)
             return false;
@@ -117,15 +188,13 @@ class LinksScreen extends React.Component {
 
     }
 
- // Your Last Message
+    // Your Last Message
     cardFirstElementRender = () => {
 
         let {lastMessage} = this.props;
-        console.log("denmbow", lastMessage)
         if(!_.isEmpty(lastMessage) ) {
             let matches = this.handleText(lastMessage.message);
 
-            console.log("hola", this.props.searchHashtag.toString(), _.intersection(matches, this.props.searchHashtag).toString())
             if(!this.arraysEqual(_.intersection(matches, this.props.searchHashtag), this.props.searchHashtag) && !_.isEmpty(this.props.searchHashtag)) return null;
 
             return (
@@ -197,23 +266,24 @@ class LinksScreen extends React.Component {
             matches.push(match[1]);
         }
 
-        console.log("match", matches)
         return matches;
 
 
     }
 
+    addHashtagToList = (elem) => {
+        if(this.props.searchHashtag.indexOf(elem) === -1) {
+            let searchHashtag = this.props.searchHashtag;
+            searchHashtag.push(elem);
+            this.props.addSearchHashtag(searchHashtag);
+            this.getPosts();
+        }
+    }
+
     createBadges = (text) => {
         return this.handleText(text).map((elem, i)=>
             <Badge
-                onPress={() => {
-                    if(this.props.searchHashtag.indexOf(elem) === -1) {
-                        let searchHashtag = this.props.searchHashtag;
-                        searchHashtag.push(elem);
-                        this.props.addSearchHashtag(searchHashtag);
-                        this.getPosts();
-                    }
-                }}
+                onPress={() => this.addHashtagToList(elem)}
                 key={i}
                 badgeStyle={{backgroundColor: Colors.secondaryColor, borderRadius: 7, height: 25 }}
                 textStyle={{fontSize: 16}}
@@ -223,7 +293,6 @@ class LinksScreen extends React.Component {
 
     cardElementRender = (item, i) => {
         let lastMessage = item.item;
-        console.log("Elem", item);
         if(lastMessage.idMessage !== this.props.idLastMessage)
             return (
                 <View >
@@ -319,7 +388,7 @@ class LinksScreen extends React.Component {
                       style={{margin: 10, paddingRight: 5, paddingLeft: 5,
                           borderRadius: 10, backgroundColor: 'white',
                           flexDirection: 'row', alignItems: 'center',
-                          justifyContent: 'space-around', alignContent: 'center', flex: 1}}>
+                          justifyContent: 'space-around', alignContent: 'center'}}>
                     <Text style={[styles.textLocation, {color: 'black'}]}>
                         #{elem}
                     </Text>
@@ -348,17 +417,7 @@ class LinksScreen extends React.Component {
     // The app is calculating
     // Your current position!"
 
-    emptyComponent = () => {
-        return (
-            <View>
-                <Text style={styles.textLocation}>
-                    {i18n.t('no_messages_1')}
-                 </Text>
-                <Text style={styles.textlocationBold}>
-                    {i18n.t('no_messages_2')}  </Text>
-            </View>
-        )
-    };
+
 
 
     renderFooter = () => {
@@ -378,43 +437,52 @@ class LinksScreen extends React.Component {
     };
 
     getMorePosts = () => {
-        console.log("HARSH", this.props.longitude, this.props.latitude);
         this.props.refreshing();
         this.props.getMessages(this.props.longitude, this.props.latitude, this.props.searchHashtag, this.state.page+1);
 
     };
 
 
+    emptyComponent = () => {
+        if(!_.isEmpty(this.props.hashes)) {
+            return (
+                <View style={{margin: 20}}>
+                    <Text style={styles.textLocation}>
+                        {i18n.t('no_hashes_1')}
+                    </Text>
+                    <Text style={styles.textlocationBold}>
+                        {i18n.t('no_hashes_2')}  </Text>
+                </View>
+
+            )
+        }
+
+        return (
+            <View style={{margin: 20}}>
+                <Text style={styles.textLocation}>
+                    {i18n.t('no_messages_1')}
+                </Text>
+                <Text style={styles.textlocationBold}>
+                    {i18n.t('no_messages_2')}  </Text>
+            </View>
+        )
+    }
+
+
     render() {
-        console.log(this.props.messages);
 
         let hashTxt = this.renderHashtagsText()
-        return this.props.latitude === "" ?
-            <View>
-                <Text style={styles.textLocation}>
-                    {i18n.t('calculating_position_1')}
-                    </Text>
-                <Text style={styles.textlocationBold}>
-                    {i18n.t('calculating_position_2')}
-
-                      </Text>
-            </View> : (
+        return  (
 
                 <React.Fragment>
 
                     <View  style={{backgroundColor: Colors.secondaryColor}}>
-                        {
-                            _.isEmpty(hashTxt) ?
-                                this.renderSearch()
-                                :
 
-                                <View style={{flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignSelf: 'center', flex:0}}>
+                        {this.renderSearch()}
 
-                                    {hashTxt}
-                                </View>
-
-                        }
-
+                        <View style={{flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignSelf: 'center'}}>
+                            {hashTxt}
+                        </View>
 
                         <FlatList
                             style={{backgroundColor: 'white', borderTopLeftRadius: 20, borderTopRightRadius: 20}}
@@ -477,7 +545,8 @@ const mapStateToProps = state => ({
     lastMessage: state.Message.lastMessage,
     idLastMessage:state.Message.idLastMessage,
     deleteTokenLastMessage: state.Message.deleteTokenLastMessage,
-    searchHashtag: state.Message.searchHashtag
+    searchHashtag: state.Message.searchHashtag,
+    hashes: state.Message.hashes
 });
 
 const mapDispatchToProps = dispatch =>({
@@ -485,7 +554,9 @@ const mapDispatchToProps = dispatch =>({
     getMessages: (longitude, latitude, hashtags, page) => dispatch(getMessages(longitude, latitude, hashtags, page)),
     deleteMessage: (deleteToken, idMessage) => dispatch(deleteMessage(deleteToken, idMessage)),
     reportMessage: ( idMessage) => dispatch(reportMessage(idMessage)),
-    addSearchHashtag: (searchHashtag)  => dispatch(addSearchHashtag(searchHashtag))
+    addSearchHashtag: (searchHashtag)  => dispatch(addSearchHashtag(searchHashtag)),
+    filterHash: (message) => dispatch(filterHash(message)),
+    deleteFilterHashTag: () => dispatch(deleteFilterHashTag())
 
 });
 
@@ -496,7 +567,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
         marginTop: 20,
-
     },
 
     separator: {
@@ -528,6 +598,13 @@ const styles = StyleSheet.create({
         fontSize: 18,
         marginBottom: 10,
     },
+    titleHash: {
+        textAlign: 'center',
+        fontWeight: 'bold',
+        fontFamily: 'noto-sans-bold',
+        fontSize: 14,
+        color: 'white'
+    },
     textLocation: {
         fontFamily: 'noto-sans-reg',
         textAlign: 'center',
@@ -540,7 +617,7 @@ const styles = StyleSheet.create({
         marginTop: 7
     },
     textlocationBold:
-        {fontFamily: 'space-mono',
+        {fontFamily: 'noto-sans-bold',
             fontWeight: 'bold',
             textAlign: 'center',
             fontSize: 18,
