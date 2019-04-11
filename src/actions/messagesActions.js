@@ -7,37 +7,59 @@ import {
     SUBMIT_MESSAGE,
     GET_GPS,
     REFRESHING,
-    SUBMIT_MESSAGE_FAIL, SUBMITTING, NOTIFY_MESSAGE, ADD_SEARCH_HASHTAG, CONFIG_CALL, FILTER_TAGS, DELETE_FILTER_TAGS
+    SUBMIT_MESSAGE_FAIL,
+    SUBMITTING,
+    NOTIFY_MESSAGE,
+    ADD_SEARCH_HASHTAG,
+    CONFIG_CALL,
+    FILTER_TAGS,
+    DELETE_FILTER_TAGS,
+    END_REFRESHING, MEMORIAE_MESSAGE
 } from "./types";
 import Headers from "../../constants/Headers";
 import { Localization } from 'expo';
+import _ from 'lodash'
 
 const FETCH_RETRY=3;
+const FETCH_TIMEOUT=5000;
+const ENDPOINT = "https://test.memoriae.app/api/core/";
+let didTimeOut = false;
 
 function fetch_retry(url, options, n=FETCH_RETRY) {
 
-    console.log("I'm repeating ", n)
+    console.log("I'm repeating ", n, url);
 
     return new Promise(function(resolve, reject) {
 
-            fetch(url, options)
+        const timeout = setTimeout(function() {
+            didTimeOut = true;
+            reject(new Error('Request timed out'));
+        }, FETCH_TIMEOUT);
+
+
+        fetch(url, options)
             .then( (res) => {
+                clearTimeout(timeout);
+                if(!didTimeOut) {
 
-                console.log("chocolate", res.status);
+                    console.log("chocolate", res.status);
 
-                if(res.status === 429) {
-                    if (n === 1) return reject();
 
-                     setTimeout(() => resolve(fetch_retry(url, options, n - 1)), FETCH_RETRY+1-n * 500)
-                }else{
-                    resolve(res)
+                    if (res.status === 429) {
+                        if (n === 1) return reject();
+                        setTimeout(() => resolve(fetch_retry(url, options, n - 1)), FETCH_RETRY + 1 - n * 500)
+                    } else if (res.status !== 200) {
+                        return reject();
+                    } else {
+                        resolve(res)
+                    }
                 }
             }).catch(function(error) {
             console.log("errorchocolate", error);
 
-            if (n === 1) return reject(error);
-                setTimeout(resolve(fetch_retry(url, options, n - 1)), FETCH_RETRY+1-n*500)
-            })
+            if (n <= 1) return reject(error);
+
+            setTimeout(() => resolve(fetch_retry(url, options, n - 1)), FETCH_RETRY+1-n*500)})
 
     })
 }
@@ -49,10 +71,10 @@ function fetch_retry(url, options, n=FETCH_RETRY) {
 function fetchMessages(latitude, longitude, hashtag=[], page=0) {
     let addHashtag = '';
 
-    if(hashtag !== null || hashtag !== undefined){
+    if(( hashtag !== null || hashtag !== undefined )&& !_.isEmpty(hashtag)){
         addHashtag = "&hashtag[]=" + hashtag.join(",")
     }
-    return fetch_retry('http://54.38.65.73/core/get?' + 'latitude=' + latitude + ' &longitude=' + longitude + addHashtag + '&page=' + page, {
+    return fetch_retry(ENDPOINT + 'get?' + 'latitude=' + latitude + '&longitude=' + longitude + addHashtag + '&page=' + page, {
         method: 'GET',
         headers: {
             Accept: 'application/json',
@@ -65,7 +87,7 @@ function fetchMessages(latitude, longitude, hashtag=[], page=0) {
 
 
 function configCallGET(latitude, longitude, hashtag=[]) {
-    return fetch_retry('http://54.38.65.73/core/config?' + 'latitude=' + latitude + ' &longitude=' + longitude , {
+    return fetch_retry(ENDPOINT +  'config?' + 'latitude=' + latitude + ' &longitude=' + longitude , {
         method: 'GET',
         headers: {
             Accept: 'application/json',
@@ -77,7 +99,7 @@ function configCallGET(latitude, longitude, hashtag=[]) {
 }
 
 function deleteMessagePOST(deleteToken, idMessage) {
-    return  fetch_retry('http://54.38.65.73/core/delete', {
+    return  fetch_retry(ENDPOINT +  'delete', {
         method: 'POST',
         headers: {
             Accept: 'application/json',
@@ -94,7 +116,7 @@ function deleteMessagePOST(deleteToken, idMessage) {
 }
 
 function notifyMessagePOST(idMessage) {
-    return  fetch_retry('http://54.38.65.73/core/report', {
+    return  fetch_retry(ENDPOINT + 'report', {
         method: 'POST',
         headers: {
             Accept: 'application/json',
@@ -112,7 +134,7 @@ function notifyMessagePOST(idMessage) {
 function sendPOSTSubmit(message, hashtag,  longitude, latitude, idSubmit) {
 
     console.log("localization ", Localization.locale)
-    return  fetch_retry('http://54.38.65.73/core/submit', {
+    return  fetch_retry(ENDPOINT + 'submit', {
         method: 'POST',
         headers: {
             Accept: 'application/json',
@@ -131,9 +153,22 @@ function sendPOSTSubmit(message, hashtag,  longitude, latitude, idSubmit) {
     })
 }
 
-function filterTagGET(message) {
+function memoriaeMessage() {
 
-    return fetch_retry('http://54.38.65.73/core/filtertag?' + 'tag=' + message , {
+    return fetch_retry(ENDPOINT + 'memoriaemessage?lang=' + 'it', {
+        method: 'GET',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-App-Version': Headers.AppVersion,
+            'X-App-Key': Headers.AppKey
+        }
+    })
+}
+
+function filterTagGET(message, longitude, latitude) {
+
+    return fetch_retry(ENDPOINT + 'filtertag?' + 'tag=' + message + '&latitude=' + latitude + "&longitude=" + longitude , {
         method: 'GET',
         headers: {
             Accept: 'application/json',
@@ -209,6 +244,11 @@ export const refreshing = () => {
         type: REFRESHING,
     })
 };
+export const endRefreshing = () => {
+    return ({
+        type: END_REFRESHING,
+    })
+};
 
 export const submitting = () => {
     return ({
@@ -229,10 +269,23 @@ const config = (config) =>{
         type: CONFIG_CALL,
         payload: config
     })
+};
+const saveMemoriaeMessage = (message) =>{
+    return ({
+        type: MEMORIAE_MESSAGE,
+        payload: message
+    })
+};
+
+
+export const getMemoriaeMessages = () => {
+    return function (dispatch) {
+        return memoriaeMessage().then(
+            message => dispatch(saveMemoriaeMessage(message)),
+            error => dispatch(errorMessage(error))
+        );
+    };
 }
-
-
-
 
 export const configCall = (longitude, latitude) => {
     return function (dispatch) {
@@ -247,9 +300,8 @@ export const getMessages = (longitude, latitude, hashtags, page=0) => {
 
     return function (dispatch) {
         return fetchMessages(latitude, longitude, hashtags, page).then(
-            message => {             console.log("shit", message)
-                return dispatch(saveMessages(message,page))},
-            error => {}
+            message => dispatch(saveMessages(message,page)),
+            error => dispatch(endRefreshing())
         );
     };
 };
@@ -286,10 +338,10 @@ export const reportMessage = (idMessage) => {
 };
 
 
-export const filterHash = (message) => {
+export const filterHash = (message, longitude, latitude) => {
 
     return function (dispatch) {
-        return filterTagGET(message).then(
+        return filterTagGET(message, longitude, latitude).then(
             message => dispatch(filterHashTag(message)),
             error => dispatch(errorSubmitting(error))
         );

@@ -38,7 +38,7 @@ export default class AppIntroSlider extends React.Component {
         prevLabel: 'Back',
         buttonStyle: null,
         buttonTextStyle: null,
-    }
+    };
     state = {
         width,
         height,

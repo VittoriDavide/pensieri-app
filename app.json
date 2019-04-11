@@ -11,11 +11,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#5aa49f"
-    },
     "updates": {
       "fallbackToCacheTimeout": 0
     },
@@ -23,10 +18,29 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "splash": {
+        "image": "./assets/images/logo_nuovo.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#009485"
+      }
     },
     "android": {
-      "package": "com.pensieri.memoriae"
+      "package": "it.codeitall.mobi.memoriae",
+      "versionCode": 1,
+      "splash": {
+        "mdpi": "./assets/images/logo_m.png",
+        "hdpi": "./assets/images/logo_h.png",
+        "xhdpi": "./assets/images/logo_x.png",
+        "xxhdpi": "./assets/images/logo_xx.png",
+        "xxxhdpi": "./assets/images/logo_nuovo.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#009485"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "description": ""
   }

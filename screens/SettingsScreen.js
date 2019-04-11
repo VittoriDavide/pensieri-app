@@ -1,19 +1,30 @@
 
 import React from 'react';
-import {  StyleSheet, View, Dimensions } from 'react-native';
-import { DangerZone } from 'expo';
-import {Text,Icon, Button} from 'react-native-elements';
+import {StyleSheet, View, Dimensions, FlatList, Platform, ScrollView} from 'react-native';
+import {DangerZone, LinearGradient} from 'expo';
+import {Text, Icon, Button, Badge} from 'react-native-elements';
 const { Lottie } = DangerZone;
-import animate from '../animation-w72-h72'
+import animate from '../assets/animations/animation-w72-h72'
 import Colors from "../constants/Colors";
 import {connect} from "react-redux";
 import {addSearchHashtag, deleteMessage, getMessages, refreshing, reportMessage} from "../src/actions/messagesActions";
 import moment from 'moment';
 import i18n from 'i18n-js';
+const { width, height } = Dimensions.get('window');
+import world from '../assets/animations/animation-w1440-h1024-3-w1440-h1024-2'
 
+
+const isIphoneX = (
+    Platform.OS === 'ios' &&
+    !Platform.isPad &&
+    !Platform.isTVOS &&
+    (height === 812 || width === 812 || height === 896 || width === 896)
+
+);
 class SettingsScreen extends React.Component {
     state = {
         animation: animate,
+        activeIndex: 0
     };
     static navigationOptions = {
         headerStyle: {
@@ -21,6 +32,8 @@ class SettingsScreen extends React.Component {
 
         },
         title: `memoriae`,
+
+        header: null,
         headerTintColor: '#fff',
         headerTitleStyle: {
             fontWeight: 'bold',
@@ -31,10 +44,56 @@ class SettingsScreen extends React.Component {
             textAlign:"center",
             flex:1
         },
+
+
+    };
+
+    handleText = (inputText) => {
+        var regex = /(?:^|\s)(?:#)([a-zA-Z\d]+)/gm;
+        var matches = [];
+        var match;
+
+        while ((match = regex.exec(inputText))) {
+            if(!matches.includes(match[1])) {
+                matches.push(match[1]);
+            }
+        }
+
+        return matches;
+
+
+    };
+
+
+    createBadges = (text) => {
+        return this.handleText(text).map((elem, i)=>
+            <Badge
+                key={i}
+                badgeStyle={{backgroundColor: Colors.secondaryColor, borderRadius: 7, height: 25 }}
+                textStyle={{fontSize: 16}}
+                value={elem}/>
+        )
+    }
+
+
+    cardElementRender = (item, i) => {
+        let lastMessage = item.item;
+        return (
+            <View  style={styles.message}>
+                <Text style={styles.title}>{i18n.t('SAID', {user: '001' } ) }</Text>
+
+                <View style={styles.badgeContainer}>
+                    {this.createBadges(lastMessage.text)}
+                </View>
+
+
+                <Text style={styles.name}>{lastMessage.text}</Text>
+            </View>
+        )
     };
 
     secondsToHms = () => {
-        2131111
+
         let d = Number(this.props.lifetime);
         let y, m, dd, h;
 
@@ -67,67 +126,169 @@ class SettingsScreen extends React.Component {
         }
         return str
     }
-//Life of own server...
+
+    _renderPagination = () => {
+
+        return (
+            <View style={styles.paginationContainer}>
+                <View style={styles.paginationDots}>
+                    {this.props.memoriaeMessage.length > 1 && this.props.memoriaeMessage.map((_, i) => (
+                        <View
+                            key={i}
+                            style={[
+                                styles.dot,
+                                i === this.state.activeIndex ? styles.activeDotStyle : styles.dotStyle,
+                            ]}
+                        />
+                    ))}
+                </View>
+            </View>
+        )
+    };
+
+    _onMomentumScrollEnd = (e) => {
+        const offset = e.nativeEvent.contentOffset.x;
+        // Touching very very quickly and continuous brings about
+        // a variation close to - but not quite - the width.
+        // That's why we round the number.
+        // Also, Android phones and their weird numbers
+        const newIndex = Math.round(offset / width);
+        if (newIndex === this.state.activeIndex) {
+            // No page change, don't do anything
+            return;
+        }
+        const lastIndex = this.state.activeIndex;
+        this.setState({ activeIndex: newIndex });
+    };
+    renderheader = () => {
+
+
+        return (
+            <View style={{backgroundColor: Colors.tintColor, paddingTop: isIphoneX ? 40 : 30, paddingBottom: 10}}>
+                <View style={{ flexDirection: 'row',  backgroundColor: Colors.tintColor, alignItems: 'center',justifyContent: 'space-between'}}>
+                    <Text style={styles.headerTitleStyle}>memoriae</Text>
+
+
+                </View>
+
+
+            </View>
+        );
+    };
+
+
+    //Life of own server...
 
     //to die
     //"Give me life"
 
     // Every {this.props.hourRate}$ give 1 hour of live
     render() {
+        console.log("Render Settings")
 
 
         console.log("puttanina", this.props.lifetime);
         return (
             <React.Fragment>
-            <View style={{backgroundColor: Colors.secondaryColor, height: 10}} />
-            <View style={styles.animationContainer}>
 
 
-                <Text style={styles.textStyle}>{i18n.t('us_screen_text')}</Text>
-                <Text style={styles.textStyle}>
-                    {this.secondsToHms()}
-                    {i18n.t('to_die')}</Text>
-                <Button
-                    containerStyle={{alignSelf: 'flex-end', marginVertical: 20}}
-                    buttonStyle={{backgroundColor: Colors.secondaryColor, alignSelf: 'flex-end'}}
-                    title= {i18n.t('give_me_live')}
-                    raised
-                />
-                <Text style={styles.textStyle}>{i18n.t('hour_rate', { hourRate: this.props.hourRate })} </Text>
+                {this.renderheader()}
+                <LinearGradient
+                    style={{height: 10}}
+                    colors={['#9BE4DC', '#009485' ]}
+                    start={{x: 1, y: 1}}
+                    end={{x: 0, y: 0}}
+                >
 
-                <Text style={styles.textStyle}>{i18n.t('donate')}</Text>
-                <Text style={{fontFamily: 'noto-sans-bold', fontSize: 36, alignSelf: 'flex-end'}}>{i18n.t('memoriae')}</Text>
 
-            </View>
+                    <View style={{height: 10}}/>
+                </LinearGradient>
+                <ScrollView>
+                <View style={{ flexDirection: 'column' , backgroundColor: '#FFFFFF55', justifyContent: 'space-between', height: '100%'}}>
+                    <View>
+                        <FlatList
+                            ref={(list) => this.horizontalFlat = list}
+                            horizontal
+                            data={this.props.memoriaeMessage}
+                            renderItem={this.cardElementRender}
+                            keyExtractor={(item, index) => {  return index } }
+                            bounces={false}
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            onMomentumScrollEnd={this._onMomentumScrollEnd}
+
+
+                        />
+                        {this._renderPagination()}
+                    </View>
+
+                    <View style={{marginRight: 20, marginBottom: 100, flexDirection: 'row', alignSelf: 'flex-end' }}>
+
+                        <View style={{marginTop: 30, justifyContent: 'flex-end'}}>
+
+                            <Text style={styles.textStyle}>{i18n.t('us_screen_text')}</Text>
+                            <Text style={styles.textStyle2}>
+                                {this.secondsToHms()}
+                                {i18n.t('to_die')}</Text>
+
+                            <Text style={styles.textStyle}>{i18n.t('hour_rate', { hourRate: this.props.hourRate })} </Text>
+
+                            <Text style={styles.textStyle3}>{i18n.t('donate')}</Text>
+                            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                <Button
+                                    containerStyle={{alignSelf: 'flex-end', marginVertical: 20}}
+                                    buttonStyle={{backgroundColor: Colors.secondaryColor, alignSelf: 'flex-end'}}
+                                    title= {i18n.t('give_me_live')}
+                                    raised
+                                />
+                                <Text style={{fontFamily: 'noto-sans-bold', fontSize: 36, alignSelf: 'flex-end', marginVertical: 7}}>{i18n.t('memoriae')}</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                </View>
+                </ScrollView>
+
             </React.Fragment>
 
         );
     }
 
-    _playAnimation = () => {
 
-        this.animation.play();
 
-    };
+    renderCardioAnimation = () => {
+        return (
+            <View
+                style={{
+                    width: 100,
+                    height: 100,
+                }}
+            >
+                <Lottie
+                    ref={(animation) => animation.play()}
 
-    _loadAnimationAsync = async () => {
-        let result = await fetch(
-            'https://cdn.rawgit.com/airbnb/lottie-react-native/635163550b9689529bfffb77e489e4174516f1c0/example/animations/Watermelon.json'
+                    style={{
+                        width: 100,
+                        height: 100,
+                        backgroundColor: 'transparent',
+                    }}
+                    source={cardio}
+                    autoPlay
+                    loop
+
+                />
+            </View>
+
+
         )
-            .then(data => {
-                return data.json();
-            })
-            .catch(error => {
-                console.error(error);
-            });
-        this.setState({ animation: result }, this._playAnimation);
-    };
+    }
 }
 
 
 const mapStateToProps = state => ({
     hourRate: state.Message.hourRate,
     lifetime: state.Message.lifetime,
+    memoriaeMessage: state.Message.memoriaeMessage
 });
 
 
@@ -141,19 +302,145 @@ export default connect(mapStateToProps, mapDispatchToProps())(SettingsScreen)
 const styles = StyleSheet.create({
     animationContainer: {
         backgroundColor: '#fff',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'flex-start',
         flex: 1,
         marginRight: 20,
-        marginVertical: 20
     },
     buttonContainer: {
         paddingTop: 20,
     },
     textStyle: {
+        fontFamily: 'noto-sans-bold',
+        letterSpacing: 0.9,
+        fontSize: 16,
+        fontWeight: 'bold',
+        alignSelf: 'flex-end',
+        marginVertical: 5
+
+    },
+    textStyle2: {
         fontFamily: 'noto-sans-reg',
-        letterSpacing: 1.1,
+        letterSpacing: 0.9,
+        fontSize: 16,
+        alignSelf: 'flex-end',
+        marginVertical: 5
+
+    },
+    textStyle3: {
+        fontFamily: 'noto-sans-bold',
+        letterSpacing: 0.9,
+        fontSize: 20,
+        fontWeight: '800',
+        alignSelf: 'flex-end',
+        marginVertical: 5
+
+    },
+    user: {
+        justifyContent: 'center',
+        marginVertical: 10,
+        textAlign: 'center',
+        width: width,
+
+    },
+    message: {
+        justifyContent: 'center',
+        marginVertical: 10,
+        paddingHorizontal: 10,
+        textAlign: 'center',
+        width: width,
+    },
+    name: {
+        textAlign: 'right',
+        fontFamily: 'space-mono',
         fontSize: 18,
-        alignSelf: 'flex-end'
+        letterSpacing: 1
+
+    },
+    badgeContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
+        marginVertical: 7
+    },
+    title: {
+        textAlign: 'right',
+        fontFamily: 'noto-sans-bold',
+        fontWeight: 'bold',
+        fontSize: 18,
+        color: 'gray'
+    },
+    paginationDots: {
+        height: 16,
+        margin: 16,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+    },
+    dot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        marginHorizontal: 4,
+        backgroundColor: 'black'
+    },
+
+
+    leftButtonContainer: {
+        position: 'absolute',
+        left: 0,
+    },
+    rightButtonContainer: {
+        position: 'absolute',
+        right: 0,
+    },
+    bottomButtonContainer: {
+        height: 44,
+        marginHorizontal: 16,
+    },
+    bottomButton: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, .3)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    bottomButtonDisabled: {
+        flex: 1,
+        backgroundColor:  'rgba(0, 0, 0, .3)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    buttonText: {
+        backgroundColor: 'transparent',
+        color: 'white',
+        fontSize: 18,
+        padding: 12,
+    },
+    activeDotStyle: {
+        backgroundColor: 'rgb(0, 0, 0)',
+    },
+    dotStyle: {
+        backgroundColor: 'rgba(0, 0, 0, .2)',
+    },
+
+    headerTitleStyle: {
+        fontWeight: 'bold',
+        fontFamily: 'noto-sans-bold',
+        fontSize: 26,
+        alignSelf: 'center',
+        justifyContent: 'center',
+        textAlign:"center",
+        flex:1,
+        color: 'white'
+    },
+    animationContainerBack: {
+        backgroundColor: '#fff',
+        alignItems: 'flex-end',
+        justifyContent: 'flex-end',
+        flex: 1,
+        zIndex: 0,
+        position: 'absolute',
+        bottom: height/20,
+        right: 0
     }
 });

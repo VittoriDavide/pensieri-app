@@ -1,16 +1,19 @@
 import React from 'react';
 import { Entypo, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { StyleSheet, View, Text, I18nManager, AsyncStorage } from 'react-native';
-import { LinearGradient,  } from 'expo';
+import {StyleSheet, View, Text, I18nManager, AsyncStorage, TouchableOpacity, Linking} from 'react-native';
+import { LinearGradient, Localization } from 'expo';
 import AppIntroSlider from '../components/AppIntroSlider';
 import {Image, CheckBox, Button} from 'react-native-elements';
 import Colors from "../constants/Colors";
-import { AppLoading } from 'expo';
+import { AppLoading, DangerZone} from 'expo';
 import _ from 'lodash'
 import i18n from 'i18n-js';
+const { Lottie } = DangerZone;
+import messages from '../assets/animations/animation-w300-h300'
+import lock from '../assets/animations/291-searchask-loop'
+import world from '../assets/animations/animation-w1440-h1024'
 
 I18nManager.forceRTL(false);
-
 
 const styles = StyleSheet.create({
     mainContent: {
@@ -48,6 +51,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    animationContainer: {
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+        backgroundColor: 'transparent'
+    },
 });
 //'Text the World!',
 //'People can read your messages just in your position, try using #hashtag to see your message next time!',
@@ -56,15 +66,17 @@ const slides = [
         key: 'somethun',
         title: 'title_1_splash',
         text: 'text_1_splash',
-        icon: 'comment-text-multiple',
+        //icon: 'comment-text-multiple',
+        animation: world,
         colors: ['#009485', '#40B1A5'],
     },
     {
         key: 'somethun1',
         title: 'title_2_splash', // 'Completely Anonymous',
         text: 'text_2_splash',
-            //'Your message are entirely anonymous, you should not use any name or personal information of others.',
-        icon: 'eye-off',
+        //'Your message are entirely anonymous, you should not use any name or personal information of others.',
+        //icon: 'eye-off',
+        animation: messages,
         colors: ['#009485', '#40B1A5'],
     },
     {
@@ -83,8 +95,8 @@ export default class WelcomeScreen extends React.Component {
         let token = await AsyncStorage.getItem('token');
 
         if (token) {
+            //this.setState({ token });
             this.props.navigation.navigate('Main');
-            this.setState({ token });
         } else {
             this.setState({ token: false });
         }
@@ -96,8 +108,10 @@ export default class WelcomeScreen extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            checked: false
+            checked: false,
+            token: null
         }
+
     }
 
     static navigationOptions = {
@@ -105,7 +119,6 @@ export default class WelcomeScreen extends React.Component {
     };
 
     _renderItem = (props, that) => {
-        console.log("mamalo",props)
 
         return (
             <LinearGradient
@@ -129,40 +142,148 @@ export default class WelcomeScreen extends React.Component {
                     color="white"
                 /> : undefined}
 
+                {props.animation ?     <View style={styles.animationContainer}>
+                    <View
+                        style={{
+                            width: 350,
+                            height: 350,
+                        }}
+                    >
+                        {props.animation &&
+                        <Lottie
+                            ref={(animation) => { if(animation !== null) animation.play()}}
+
+                            style={{
+                                width: 350,
+                                height: 350,
+                                backgroundColor: 'transparent',
+                            }}
+                            source={props.animation}
+                            autoPlay
+                            loop
+
+                        />}
+                    </View>
+                </View>: undefined}
+
                 {props.image ?
                     <React.Fragment >
+
                         <Image
                             source={require('../assets/images/logo.png')}
-                            style={{ width: 160, height: 175 }}
+                            style={{ width: 165, height: 175 }}
                         />
+
+
 
                         <View style={styles.termsContainer}>
                             <CheckBox
                                 containerStyle={{backgroundColor: 'transparent', borderWidth: 0}}
                                 title={i18n.t('terms')} //"You accept the terms and condition"
-                                checked={that.state.checked}
-                                textStyle={{color:'black', fontFamily: 'merry-reg', letterSpacing: 1.1}}
-                                checkedColor='black'
-                                onPress={() => that.setState({ checked: !that.state.checked })}
+                                checked={true}
+                                textStyle={{color:'transparent', fontFamily: 'merry-reg', letterSpacing: 1.1, fontSize: 16}}
+                                checkedColor='transparent'
                             />
-                            <CheckBox
-                                containerStyle={{backgroundColor: 'transparent', borderWidth: 0}}
-                                title={i18n.t('privacy')}//"You confirm you have read the privacy policy"
-                                checked={that.state.policyChecked}
-                                textStyle={{color:'black', fontFamily: 'merry-reg', letterSpacing: 1.1}}
-                                checkedColor='black'
-                                onPress={() => that.setState({ policyChecked: !that.state.policyChecked })}
-                            />
+                            <View style={{flexDirection: 'row',alignItems: 'center'}}>
+                                <CheckBox
+                                    containerStyle={{backgroundColor: 'transparent', borderWidth: 0}}
+                                    //"You confirm you have read the privacy policy"
+                                    checked={that.state.policyChecked}
+                                    textStyle={{
+                                        color: 'white',
+                                        fontFamily: 'merry-reg',
+                                        letterSpacing: 1.1,
+                                        fontSize: 16
+                                    }}
+                                    checkedColor='white'
+                                    onPress={() => that.setState({policyChecked: !that.state.policyChecked})}
+                                />
+                                <TouchableOpacity
+                                    onPress={()=> {
+
+                                        Linking.openURL(
+
+                                            Localization.locale === 'en' ?
+                                                'https://www.iubenda.com/privacy-policy/47792007'
+                                                :
+                                                'https://www.iubenda.com/privacy-policy/18009329'
+
+                                        ).catch((err) => console.error('An error occurred', err));
+
+                                    } }
+                                    style={{
+                                        flexDirection: "row",
+                                        flexWrap: "wrap",
+                                        flex: 1,
+                                    }} >
+                                    <Text style={{
+                                        color: 'white',
+                                        fontFamily: 'merry-reg',
+                                        letterSpacing: 1.1,
+                                        fontSize: 16,
+                                        flexWrap: "wrap",
+                                        flex: 1,
+                                        textDecorationLine: 'underline'
+                                    }}>
+                                        {i18n.t('privacy')}
+                                    </Text>
+                                </TouchableOpacity>
+
+                            </View>
+                            <View style={{flexDirection: 'row',alignItems: 'center'}}>
+                                <CheckBox
+                                    containerStyle={{backgroundColor: 'transparent', borderWidth: 0}}
+                                    //"You confirm you have read the privacy policy"
+                                    checked={that.state.checked}
+                                    textStyle={{
+                                        color: 'white',
+                                        fontFamily: 'merry-reg',
+                                        letterSpacing: 1.1,
+                                        fontSize: 16
+                                    }}
+                                    checkedColor='white'
+                                    onPress={() => that.setState({ checked: !that.state.checked })}
+                                />
+                                <TouchableOpacity
+                                    onPress={()=> {
+
+                                        Linking.openURL(
+                                                'https://memoriae.app/term'
+                                        ).catch((err) => console.error('An error occurred', err));
+
+                                    } }
+
+
+                                    style={{
+                                    flexDirection: "row",
+                                    flexWrap: "wrap",
+                                    flex: 1,
+                                }} >
+                                    <Text style={{
+                                        color: 'white',
+                                        fontFamily: 'merry-reg',
+                                        letterSpacing: 1.1,
+                                        fontSize: 16,
+                                        flexWrap: "wrap",
+                                        flex: 1,
+                                        textDecorationLine: 'underline'
+                                    }}>
+                                        {i18n.t('terms')}
+                                    </Text>
+                                </TouchableOpacity>
+
+                            </View>
+
                         </View>
 
                     </React.Fragment>
 
                     : undefined}
 
-                <View>
+                { props.title !== '' ? <View>
                     <Text style={styles.title}>{i18n.t(props.title)}</Text>
                     <Text style={styles.text}>{i18n.t(props.text)}</Text>
-                </View>
+                </View> : undefined }
             </LinearGradient>
         )};
 
@@ -170,11 +291,14 @@ export default class WelcomeScreen extends React.Component {
     onDone = async () => {
         await AsyncStorage.setItem('token', '1');
 
-            this.props.navigation.navigate('Main');
+        this.props.navigation.navigate('Main');
 
     }
 
     render() {
+
+        console.log("Render Welcome")
+
 
         if (_.isNull(this.state.token)) {
             return <AppLoading />;

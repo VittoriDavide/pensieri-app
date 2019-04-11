@@ -4,7 +4,7 @@ import { Button, Image } from 'react-native-elements';
 import { DangerZone } from 'expo';
 const { Lottie } = DangerZone;
 
-import animation from '../animation-w300-h300';
+import animation from '../assets/animations/animation-w300-h300';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 class Slides extends Component {

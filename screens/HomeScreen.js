@@ -8,10 +8,12 @@ import {
     TouchableOpacity,
     View,
     ActivityIndicator,
-    BackHandler
-
+    BackHandler,
+    Alert,
+    Dimensions,
+    NetInfo
 } from 'react-native';
-import { Constants, Location, Permissions } from 'expo';
+import { Constants, Location, Permissions, TaskManager, DangerZone, LinearGradient} from 'expo';
 
 import { Input, Icon, Badge, Button } from 'react-native-elements';
 import { connect } from 'react-redux';
@@ -21,8 +23,29 @@ import Colors from "../constants/Colors";
 import Gps from "../src/reducers/gpsReducer";
 import Headers from "../constants/Headers"
 import { saveGPS } from '../src/actions/gpsActions';
-import {configCall, getMessages, sendMessage, submitting} from '../src/actions/messagesActions';
+import {
+    configCall,
+    filterHash,
+    getMemoriaeMessages,
+    getMessages,
+    sendMessage,
+    submitting
+} from '../src/actions/messagesActions';
 import i18n from 'i18n-js';
+import world from '../assets/animations/animation-w1440-h1024-3-w1440-h1024-2'
+
+const { width, height } = Dimensions.get('window');
+
+
+const isIphoneX = (
+    Platform.OS === 'ios' &&
+    !Platform.isPad &&
+    !Platform.isTVOS &&
+    (height === 812 || width === 812 || height === 896 || width === 896)
+
+);
+
+
 
 class HomeScreen extends React.Component {
     static navigationOptions = {
@@ -32,6 +55,7 @@ class HomeScreen extends React.Component {
         },
         title: `memoriae`,
         headerTintColor: '#fff',
+        header:null,
         headerTitleStyle: {
             fontWeight: 'bold',
             fontFamily: 'noto-sans-bold',
@@ -43,6 +67,8 @@ class HomeScreen extends React.Component {
         },
     };
 
+
+
     constructor(props) {
         super(props);
         this.state = {
@@ -52,11 +78,32 @@ class HomeScreen extends React.Component {
             errorMessage: null,
             requestingLocation: true,
             layout: false,
-            submitting: false
+            submitting: false,
+            isConnected: true
         }
     }
 
+    showAlert = (title, text) => {
+        Alert.alert(
+            title,
+            text,
+            [
+                {text: i18n.t('Ok'), onPress: () => {}},
+            ],
+            {cancelable: true},
+        );
+    };
+
     submitCall = () => {
+        if(this.state.text.length < 10 || this.state.text.length > 500) {
+            this.showAlert( i18n.t('chars_title'),i18n.t('chars_text') );
+            return;
+        }
+
+        if((/^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$/g).test(this.state.text)) {
+            this.showAlert( i18n.t('url_alert_title'), i18n.t('url_alert_text'));
+            return;
+        }
 
         this.props.submitting();
 
@@ -65,8 +112,12 @@ class HomeScreen extends React.Component {
         ).then( () => {
 
                 setTimeout(
-                    () =>  this.props.getMessages(this.state.location.coords.longitude, this.state.location.coords.latitude, this.props.searchHashtag),
+                    () =>  {
+                        this.props.getMessages(this.state.location.coords.longitude, this.state.location.coords.latitude, this.props.searchHashtag)
+                        this.props.filterHash('', this.props.longitude, this.props.latitude)
+                    },
                     200
+
                 );
             }
         ).then( () => {
@@ -75,16 +126,34 @@ class HomeScreen extends React.Component {
 
             }
         )
-
     };
+
+    handleFirstConnectivityChange = (connectionInfo) => {
+        console.log(
+            'First change, type: ' +
+            connectionInfo.type +
+            ', effectiveType: ' +
+            connectionInfo.effectiveType,
+        );
+
+        this.setState({isConnected: connectionInfo.type !== 'none'})
+
+    }
 
     componentDidMount() {
         BackHandler.addEventListener('hardwareBackPress', this.handleBackPress);
+        NetInfo.addEventListener('connectionChange', this.handleFirstConnectivityChange);
     }
 
     componentWillUnmount() {
         BackHandler.removeEventListener('hardwareBackPress', this.handleBackPress);
+        NetInfo.removeEventListener('connectionChange', this.handleFirstConnectivityChange);
+
     }
+
+    handleFirstConnectivityChange = () => {
+
+    };
 
     handleBackPress = () => {
         BackHandler.exitApp();  // works best when the goBack is async
@@ -94,65 +163,97 @@ class HomeScreen extends React.Component {
     componentWillMount() {
 
         this.setState({ requestingLocation: true });
-
         this._getLocationAsync();
+
+        //Location.watchPositionAsync({timeInterval: 1000*60*5,distanceInterval: 100, accuracy: Location.Accuracy.Balanced }, () =>{
+        //   this._getLocationAsync()
+        // });
+
+        // TaskManager.defineTask("LOCATION_BACKGROUND", ({ data: { eventType, region }, error }) => {
+        //   if (error) {
+        // check `error.message` for more details.
+        //     return;
+        //}
+        //if (eventType === Location.GeofencingEventType.Enter) {
+        //  console.log("You've entered region:", region);
+        //} else if (eventType === Location.GeofencingEventType.Exit) {
+        //  console.log("You've left region:", region);
+        //}
+        //});
 
     }
 
 
 
     _getLocationAsync = async () => {
-        const permission = await Permissions.askAsync(Permissions.LOCATION)
-        const providerStatus = await Location.getProviderStatusAsync()
-        this.setState({ permission, providerStatus })
+        const permission = await Permissions.askAsync(Permissions.LOCATION);
+        const providerStatus = await Location.getProviderStatusAsync();
+        this.setState({ permission, providerStatus });
 
         try {
             const timeout = new Promise((resolve, reject) => {
                 return setTimeout(() => reject(new Error('Location timeout')), 20 * 1000)
-            })
+            });
 
             console.log('location.accuracy', Location.Accuracy)
 
-            const locationPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+            const locationPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
 
             const location = await Promise.race([locationPromise, timeout])
 
             this.setState({ location })
+
             this.props.saveGPS(location.coords.longitude, location.coords.latitude);
             this.props.configCall(location.coords.longitude, location.coords.latitude)
             this.props.getMessages(location.coords.longitude, location.coords.latitude, this.props.searchHashtag)
+            this.props.filterHash('', this.props.longitude, this.props.latitude)
+            this.props.getMemoriaeMessages();
+
         } catch (err) {
             this.setState({ errorMessage: err.message })
         }
-    }
+    };
 
 
 
     createBadges = () => {
         return this.state.hashtags.map((elem, i)=>
             <Badge  key={i}
-                    badgeStyle={{backgroundColor: Colors.secondaryColor}}
                     value={elem}
                     textStyle={{fontSize: 14, fontFamily: 'noto-sans-reg'}}
                     badgeStyle={{backgroundColor: Colors.secondaryColor, borderRadius: 7, height: 25 }}
             />
         )
-    }
+    };
+    textInputValue = null
 
     handleText = (inputText) => {
+
         this.setState({text: inputText});
         var regex = /(?:^|\s)(?:#)([a-zA-Z\d]+)/gm;
         var matches = [];
         var match;
 
         while ((match = regex.exec(inputText))) {
-            matches.push(match[1]);
+            if(!matches.includes(match[1])) {
+                matches.push(match[1]);
+            }
         }
 
-        console.log("match", matches)
-        this.setState({hashtags: matches})
+        console.log("match", matches);
+        if (this.state.hashtags !== matches) this.setState({ hashtags: matches })
 
 
+    };
+
+    addNewTodo = () => {
+        const value = this.textInputValue;
+
+        if (value) {
+            //this.props.actions.addTodo(value)
+            this.input.clear()
+            this.textInputValue = null
+        }
     }
 
     shouldShowText = () => {
@@ -166,9 +267,34 @@ class HomeScreen extends React.Component {
 
             return !this.input.isFocused();
         }
+    };
+
+    renderheader = () => {
+
+
+        return (
+            <View style={{backgroundColor: Colors.tintColor, paddingTop: isIphoneX ? 40 : 30, paddingBottom: 10}}>
+                <View style={{ flexDirection: 'row',  backgroundColor: Colors.tintColor, alignItems: 'center',justifyContent: 'space-between'}}>
+                    <Text style={styles.headerTitleStyle}>memoriae</Text>
+
+
+                </View>
+
+
+            </View>
+        );
+    };
+
+
+    shouldComponentUpdate(newProps, newState) {
+        console.log(newState, this.state)
+        return true
     }
 
+
+
     render() {
+        console.log("Render Home")
 
 
         let text = i18n.t('calculating') ;
@@ -181,76 +307,81 @@ class HomeScreen extends React.Component {
         }
 
 
-        return this.props.submitted ?
+        return this.props.submitted ? <View style={styles.container}>
+            <ActivityIndicator size="large"/>
+        </View> : <React.Fragment>
+            {this.renderheader()}
 
-            (
-                <View style={styles.container}>
-                    <ActivityIndicator size="large"  />
-                </View>
+            <View style={styles.container}>
 
-            ) : (
-                <View style={styles.container}>
-                    <View style={{backgroundColor: Colors.secondaryColor, height: 10}} />
-
-
-
-                    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-                        {this.state.text === "" ? <View style={styles.welcomeContainer}>
-                            <Text style={styles.getStartedText}>{i18n.t('welcome', {user: this.props.screenProps.user})} </Text>
-
-                            <View style={[styles.codeHighlightContainer, styles.homeScreenFilename]}>
-
-                                <MonoText style={styles.codeHighlightText}>{text}</MonoText>
-                            </View>
+                <LinearGradient
+                    style={{height: 10}}
+                    colors={['#009485', '#9BE4DC']}
+                    start={{x: 1, y: 1}}
+                    end={{x: 0, y: 0}}
+                >
 
 
+                    <View style={{height: 10}}/>
+                </LinearGradient>
 
-                        </View>: undefined}
 
-                        {this.state.text !== "" ? <Button
-                            onPress={ this.submitCall}
-                            containerStyle={{alignSelf: 'flex-end', marginVertical: 5 , marginRight: 24}}
-                            buttonStyle={{backgroundColor: Colors.secondaryColor, alignSelf: 'flex-start'}}
-                            title="Send"
-                            titleStyle={{fontFamily: 'space-mono' }}
-                            raised
+                <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
 
-                        /> : undefined}
+                    {this.state.text === "" ? <View style={styles.welcomeContainer}>
+                        <Text
+                            style={styles.getStartedText}>{i18n.t('welcome', {user: this.props.screenProps.user})} </Text>
 
-                        <View style={styles.badgeContainer}>
+                        <View style={[styles.codeHighlightContainer, styles.homeScreenFilename]}>
 
-                            {this.createBadges()}
+                            <MonoText style={styles.codeHighlightText}>{text}</MonoText>
                         </View>
 
-                        {this.state.location !== null ? <View style={styles.inputStyle}>
-                            <Input
-                                placeholder='Input text'
-                                leftIcon={{ type: 'font-awesome', name: 'chevron-right',
-                                    size: 20, color: this.state.text === "" ? 'black' : Colors.secondaryColor }}
-                                inputContainerStyle={styles.inputContainerStyle}
-                                ref={input => {
-                                    this.input = input;
-                                }}
-                                onLayout={() => this.setState({layout: true})}
-                                multiline={true}
-                                leftIconContainerStyle={styles.leftIconContainerStyle}
-                                inputStyle={{alignSelf: 'flex-end', minHeight: 20}}
-                                onChangeText={(text) => this.handleText(text) }
-                                value={this.state.text}
-                                maxLength={200}
-                                keyboardType={Platform.OS === 'ios' ? 'twitter' : 'default'}
-                                onFocus={(e) => console.log(e)}
-                            />
 
-                        </View> : undefined }
+                    </View> : undefined}
+
+                    {this.state.text !== "" ? <Button
+
+                        onPress={this.submitCall}
+                        containerStyle={{alignSelf: 'flex-end', marginVertical: 5, marginRight: 24}}
+                        buttonStyle={{backgroundColor: Colors.secondaryColor, alignSelf: 'flex-start'}}
+                        title="Send"
+                        titleStyle={{fontFamily: 'space-mono'}}
+                        raised
+                    /> : undefined}
+
+                    <View style={styles.badgeContainer}>
+                        {this.createBadges()}
+                    </View>
 
 
+                    {this.state.location !== null ? <View style={styles.inputStyle}>
+                        <Input
 
-                    </ScrollView>
+                            placeholder='Input text'
+                            leftIcon={{
+                                type: 'font-awesome', name: 'chevron-right',
+                                size: 20, color: this.state.text === "" ? 'black' : Colors.secondaryColor
+                            }}
+                            inputContainerStyle={styles.inputContainerStyle}
+                            ref={input => {
+                                this.input = input;
+                            }}
+                            multiline={true}
+                            leftIconContainerStyle={styles.leftIconContainerStyle}
+                            inputStyle={{alignSelf: 'flex-end', minHeight: 20}}
+                            onChangeText={(text) => this.handleText(text)}
+                            value={this.state.text}
+                            maxLength={200}
+                            keyboardType={Platform.OS === 'ios' ? 'twitter' : 'default'}
+                            onFocus={(e) => console.log(e)}
+                        />
 
+                    </View> : undefined}
 
-                </View>
-            );
+                </ScrollView>
+            </View>
+        </React.Fragment>;
     }
 
 
@@ -268,7 +399,10 @@ const mapDispatchToProps = dispatch =>({
     configCall: (longitude, latitude) => dispatch(configCall(longitude, latitude)),
     getMessages: (longitude, latitude, hashtag) => dispatch(getMessages(longitude, latitude, hashtag)),
     sendMessage: (message, hashtag, longitude, latitude, idSubmit) => dispatch(sendMessage(message, hashtag, longitude, latitude, idSubmit)),
-    submitting: () => dispatch(submitting())
+    submitting: () => dispatch(submitting()),
+    filterHash: (message, longitude, latitude) => dispatch(filterHash(message, longitude, latitude)),
+    getMemoriaeMessages: () => dispatch(getMemoriaeMessages())
+
 
 });
 export default connect(mapStateToProps, mapDispatchToProps)(HomeScreen)
@@ -276,7 +410,7 @@ export default connect(mapStateToProps, mapDispatchToProps)(HomeScreen)
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: 'transparent',
     },
     badgeContainer: {
         flexDirection: 'row',
@@ -346,7 +480,8 @@ const styles = StyleSheet.create({
         fontSize: 28,
         color: 'black',
         textAlign: 'center',
-        fontFamily: 'noto-sans-black',
+        fontFamily: 'noto-sans-bold',
+        fontFamily: 'noto-sans-bold',
         fontWeight: 'bold',
         marginLeft: 7,
 
@@ -391,4 +526,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#2e78b7',
     },
+
+    animationContainerBack: {
+        backgroundColor: '#fff',
+
+        zIndex: 0,
+        position: 'absolute',
+        bottom: 100,
+        right: -400
+    },
+    headerTitleStyle: {
+        fontWeight: 'bold',
+        fontFamily: 'noto-sans-bold',
+        fontSize: 26,
+        alignSelf: 'center',
+        justifyContent: 'center',
+        textAlign:"center",
+        flex:1,
+        color: 'white'
+    }
 });

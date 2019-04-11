@@ -18,7 +18,9 @@ const openAppLocationSettings = async () => {
     }
 
     await IntentLauncherAndroid.startActivityAsync(IntentLauncherAndroid.ACTION_APPLICATION_SETTINGS)
-}
+};
+
+
 
 
 export default class LocationScreen extends React.Component {

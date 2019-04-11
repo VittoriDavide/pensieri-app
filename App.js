@@ -8,17 +8,18 @@ import {Provider} from 'react-redux';
 import thunk from 'redux-thunk';
 import { Localization } from 'expo';
 import i18n from 'i18n-js';
-import {en, it, es} from './assets/i18n/localization';
+import {en, it, es, de} from './assets/i18n/localization';
 
 
 store = createStore(rootReducer, applyMiddleware(thunk));
 
 i18n.fallbacks = true;
-i18n.translations = { it, en, es };
+i18n.translations = { it, en, es, de };
 i18n.locale = Localization.locale;
 
 
 export default class App extends React.Component {
+
     state = {
         isLoadingComplete: false,
         location: null,
@@ -26,13 +27,16 @@ export default class App extends React.Component {
         requestingLocation: true,
     };
 
+
     getRandomInt = (max) =>  {
         return Math.floor(Math.random() * Math.floor(max));
-    }
+    };
+
 
     componentWillMount() {
-        this.setState({user: this.getRandomInt(1000000)})
-    }
+        this.setState({user: this.getRandomInt(10000)})
+    };
+
 
     render() {
         if (!this.state.isLoadingComplete && !this.props.skipLoadingScreen) {
@@ -57,6 +61,7 @@ export default class App extends React.Component {
         }
     }
 
+
     _loadResourcesAsync = async () => {
         return Promise.all([
             Asset.loadAsync([
@@ -69,16 +74,11 @@ export default class App extends React.Component {
                 // We include SpaceMono because we use it in HomeScreen.js. Feel free
                 // to remove this if you are not using it in your app
 
-                'space-mono': require('./assets/fonts/SpaceMono-Regular.ttf'),
-
-
-                'noto-sans-bold': require('./assets/fonts/NotoSansTC-Bold.otf'),
-                'noto-sans-light': require('./assets/fonts/NotoSansTC-Light.otf'),
-                'noto-sans-black': require('./assets/fonts/NotoSansTC-Black.otf'),
-                'noto-sans-reg': require('./assets/fonts/NotoSansTC-Regular.otf'),
-
-
-                'merry-reg': require('./assets/fonts/Merriweather-Regular.ttf'),
+                'space-mono': require('./assets/fonts/RobotoMono-Light.ttf'),
+                'noto-sans-bold': require('./assets/fonts/AvenirNext-Bold.ttf'),
+                'noto-sans-light': require('./assets/fonts/AvenirNext-UltraLight.ttf'),
+                'noto-sans-reg': require('./assets/fonts/AvenirNext-Regular.ttf'),
+                'merry-reg': require('./assets/fonts/AvenirNext-Regular.ttf'),
 
 
             }),
