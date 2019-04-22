@@ -140,14 +140,12 @@ export const es = {
 
 
 
-    //NEWS TO BE CHANGED
     no_hashes_1: 'Non ci sono altri messaggi con questo hashtag',
     no_hashes_2:"Prova a cambiarlo!",
     chars_title: "Non possiamo postare questo messaggio",
     chars_text: "Il messaggio deve avere minimo 10 caratteri e massimo 500",
-    url_alert_title: "Il messaggio deve avere minimo 10 caratteri e un massimo di 500",
-    url_alert_text: "Ci dispiace ma i link non sono abilitati in questa versione"
-
+    url_alert_title: "Non possiamo postare questo messaggio",
+    url_alert_text: "Ci dispiace ma i link non sono abilitati in questa versione",
 
 
 };

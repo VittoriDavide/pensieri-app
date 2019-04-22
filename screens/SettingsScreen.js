@@ -12,6 +12,7 @@ import moment from 'moment';
 import i18n from 'i18n-js';
 const { width, height } = Dimensions.get('window');
 import world from '../assets/animations/animation-w1440-h1024-3-w1440-h1024-2'
+import {gs} from '../constants/GlobalStyle';
 
 
 const isIphoneX = (
@@ -35,18 +36,46 @@ class SettingsScreen extends React.Component {
 
         header: null,
         headerTintColor: '#fff',
-        headerTitleStyle: {
-            fontWeight: 'bold',
-            fontFamily: 'noto-sans-bold',
-            fontSize: 26,
-            alignSelf: 'center',
-            justifyContent: 'center',
-            textAlign:"center",
-            flex:1
-        },
+        headerTitleStyle: gs.headerTitleStyle
 
 
     };
+
+    renderMessage = () => {
+        return (
+            <View style={{marginRight: 20, flexDirection: 'row', alignSelf: 'center' }}>
+
+                <View style={{marginTop: 30, justifyContent: 'center'}}>
+
+                    {i18n.t('us_screen_text') !== "" ?
+                        <Text style={styles.textStyle}>{i18n.t('us_screen_text')}</Text>
+                        :
+                        undefined }
+
+                    {i18n.t('to_die') !== "" ? <Text style={styles.textStyle2}>
+                            {this.secondsToHms()}
+                            {i18n.t('to_die')}</Text>
+                        : undefined }
+
+                    { i18n.t('hour_rate', { hourRate: this.props.hourRate }) !== "" ?
+                        <Text style={styles.textStyle}>{i18n.t('hour_rate', { hourRate: this.props.hourRate })} </Text>
+                        : undefined }
+
+                    { i18n.t('donate') !== "" ? <Text style={styles.textStyle3}>{i18n.t('donate')}</Text> : undefined }
+                    <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <Button
+                            containerStyle={{alignSelf: 'flex-end'}}
+                            buttonStyle={{backgroundColor: Colors.secondaryColor, alignSelf: 'flex-end', paddingBottom: 10}}
+                            title= {i18n.t('give_me_live')}
+                            raised
+                        />
+                        <Text style={{fontFamily: 'noto-sans-bold', fontSize: 36, alignSelf: 'flex-end'}}>{i18n.t('memoriae')}</Text>
+                    </View>
+                </View>
+            </View>
+
+        )
+    }
 
     handleText = (inputText) => {
         var regex = /(?:^|\s)(?:#)([a-zA-Z\d]+)/gm;
@@ -69,7 +98,7 @@ class SettingsScreen extends React.Component {
         return this.handleText(text).map((elem, i)=>
             <Badge
                 key={i}
-                badgeStyle={{backgroundColor: Colors.secondaryColor, borderRadius: 7, height: 25 }}
+                badgeStyle={gs.badgeStyle}
                 textStyle={{fontSize: 16}}
                 value={elem}/>
         )
@@ -78,18 +107,28 @@ class SettingsScreen extends React.Component {
 
     cardElementRender = (item, i) => {
         let lastMessage = item.item;
-        return (
-            <View  style={styles.message}>
-                <Text style={styles.title}>{i18n.t('SAID', {user: '001' } ) }</Text>
+        if(lastMessage.text.indexOf("{{memoriae}}") !== -1 ) {
+            return (
+                <View  style={styles.helloMessage}>
 
-                <View style={styles.badgeContainer}>
-                    {this.createBadges(lastMessage.text)}
+                    {this.renderMessage()}
                 </View>
-
-
-                <Text style={styles.name}>{lastMessage.text}</Text>
-            </View>
         )
+        }else {
+            return (
+                <View  style={styles.message}>
+                    <Text style={styles.title}>{i18n.t('SAID', {user: '001' } ) }</Text>
+
+                    <View style={styles.badgeContainer}>
+                        {this.createBadges(lastMessage.text)}
+                    </View>
+
+
+                    <Text style={styles.name}>{lastMessage.text}</Text>
+                </View>
+            )
+        }
+
     };
 
     secondsToHms = () => {
@@ -166,7 +205,7 @@ class SettingsScreen extends React.Component {
         return (
             <View style={{backgroundColor: Colors.tintColor, paddingTop: isIphoneX ? 40 : 30, paddingBottom: 10}}>
                 <View style={{ flexDirection: 'row',  backgroundColor: Colors.tintColor, alignItems: 'center',justifyContent: 'space-between'}}>
-                    <Text style={styles.headerTitleStyle}>memoriae</Text>
+                    <Text style={gs.headerTitleStyle}>memoriae</Text>
 
 
                 </View>
@@ -204,49 +243,25 @@ class SettingsScreen extends React.Component {
                     <View style={{height: 10}}/>
                 </LinearGradient>
                 <ScrollView>
-                <View style={{ flexDirection: 'column' , backgroundColor: '#FFFFFF55', justifyContent: 'space-between', height: '100%'}}>
-                    <View>
-                        <FlatList
-                            ref={(list) => this.horizontalFlat = list}
-                            horizontal
-                            data={this.props.memoriaeMessage}
-                            renderItem={this.cardElementRender}
-                            keyExtractor={(item, index) => {  return index } }
-                            bounces={false}
-                            pagingEnabled
-                            showsHorizontalScrollIndicator={false}
-                            onMomentumScrollEnd={this._onMomentumScrollEnd}
+                    <View style={{ flexDirection: 'column' , backgroundColor: '#FFFFFF55', justifyContent: 'space-between', height: '100%'}}>
+                        <View>
+                            <FlatList
+                                ref={(list) => this.horizontalFlat = list}
+                                horizontal
+                                data={this.props.memoriaeMessage}
+                                renderItem={this.cardElementRender}
+                                keyExtractor={(item, index) => {  return index } }
+                                bounces={false}
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={false}
+                                onMomentumScrollEnd={this._onMomentumScrollEnd}
 
 
-                        />
-                        {this._renderPagination()}
-                    </View>
-
-                    <View style={{marginRight: 20, marginBottom: 100, flexDirection: 'row', alignSelf: 'flex-end' }}>
-
-                        <View style={{marginTop: 30, justifyContent: 'flex-end'}}>
-
-                            <Text style={styles.textStyle}>{i18n.t('us_screen_text')}</Text>
-                            <Text style={styles.textStyle2}>
-                                {this.secondsToHms()}
-                                {i18n.t('to_die')}</Text>
-
-                            <Text style={styles.textStyle}>{i18n.t('hour_rate', { hourRate: this.props.hourRate })} </Text>
-
-                            <Text style={styles.textStyle3}>{i18n.t('donate')}</Text>
-                            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                                <Button
-                                    containerStyle={{alignSelf: 'flex-end', marginVertical: 20}}
-                                    buttonStyle={{backgroundColor: Colors.secondaryColor, alignSelf: 'flex-end'}}
-                                    title= {i18n.t('give_me_live')}
-                                    raised
-                                />
-                                <Text style={{fontFamily: 'noto-sans-bold', fontSize: 36, alignSelf: 'flex-end', marginVertical: 7}}>{i18n.t('memoriae')}</Text>
-                            </View>
+                            />
+                            {this._renderPagination()}
                         </View>
-                    </View>
 
-                </View>
+                    </View>
                 </ScrollView>
 
             </React.Fragment>
@@ -350,11 +365,19 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         width: width,
     },
+    helloMessage: {
+        justifyContent: 'flex-end',
+        alignItems: 'flex-end',
+        marginVertical: 20,
+        textAlign: 'center',
+        width: width,
+
+    },
     name: {
-        textAlign: 'right',
+        textAlign: 'left',
         fontFamily: 'space-mono',
         fontSize: 18,
-        letterSpacing: 1
+        letterSpacing: 1.05
 
     },
     badgeContainer: {
@@ -364,7 +387,7 @@ const styles = StyleSheet.create({
         marginVertical: 7
     },
     title: {
-        textAlign: 'right',
+        textAlign: 'center',
         fontFamily: 'noto-sans-bold',
         fontWeight: 'bold',
         fontSize: 18,
@@ -431,6 +454,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         textAlign:"center",
         flex:1,
+        padding: 3,
         color: 'white'
     },
     animationContainerBack: {

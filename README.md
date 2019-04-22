@@ -4,7 +4,7 @@ Write message and left your trace in the world
 
 ## Getting Started
 
-These is a React Native App bootstrapped with Expo.
+These a React Native App bootstrapped with Expo.
 
 ### Prerequisites
 
@@ -16,7 +16,7 @@ For more info go here: https://expo.io/learn
 
 ### Installing
 
-Simple go and run: 
+Simple go and run:
 ```
 expo start
 ```

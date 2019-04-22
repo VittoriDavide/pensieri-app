@@ -11,7 +11,8 @@ import {
     BackHandler,
     Alert,
     Dimensions,
-    NetInfo
+    Keyboard,
+    NetInfo, KeyboardAvoidingView
 } from 'react-native';
 import { Constants, Location, Permissions, TaskManager, DangerZone, LinearGradient} from 'expo';
 
@@ -21,7 +22,8 @@ import { connect } from 'react-redux';
 import { MonoText } from '../components/StyledText';
 import Colors from "../constants/Colors";
 import Gps from "../src/reducers/gpsReducer";
-import Headers from "../constants/Headers"
+import Headers from "../constants/Headers";
+import {gs} from '../constants/GlobalStyle';
 import { saveGPS } from '../src/actions/gpsActions';
 import {
     configCall,
@@ -56,15 +58,7 @@ class HomeScreen extends React.Component {
         title: `memoriae`,
         headerTintColor: '#fff',
         header:null,
-        headerTitleStyle: {
-            fontWeight: 'bold',
-            fontFamily: 'noto-sans-bold',
-            fontSize: 26,
-            alignSelf: 'center',
-            justifyContent: 'center',
-            textAlign:"center",
-            flex:1
-        },
+        headerTitleStyle: gs.headerTitleStyle
     };
 
 
@@ -79,7 +73,8 @@ class HomeScreen extends React.Component {
             requestingLocation: true,
             layout: false,
             submitting: false,
-            isConnected: true
+            isConnected: true,
+            isTextFocused: false
         }
     }
 
@@ -101,6 +96,11 @@ class HomeScreen extends React.Component {
         }
 
         if((/^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$/g).test(this.state.text)) {
+            this.showAlert( i18n.t('url_alert_title'), i18n.t('url_alert_text'));
+            return;
+        }
+
+        if((/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/g).test(this.state.text)){
             this.showAlert( i18n.t('url_alert_title'), i18n.t('url_alert_text'));
             return;
         }
@@ -141,11 +141,22 @@ class HomeScreen extends React.Component {
     }
 
     componentDidMount() {
+        this.keyboardDidShowListener = Keyboard.addListener(
+            'keyboardDidShow',
+            () => this._keyboardDidShow(this),
+        );
+        this.keyboardDidHideListener = Keyboard.addListener(
+            'keyboardDidHide',
+            () => this._keyboardDidHide(this),
+        );
+
         BackHandler.addEventListener('hardwareBackPress', this.handleBackPress);
         NetInfo.addEventListener('connectionChange', this.handleFirstConnectivityChange);
     }
 
     componentWillUnmount() {
+        this.keyboardDidShowListener.remove();
+        this.keyboardDidHideListener.remove();
         BackHandler.removeEventListener('hardwareBackPress', this.handleBackPress);
         NetInfo.removeEventListener('connectionChange', this.handleFirstConnectivityChange);
 
@@ -159,11 +170,19 @@ class HomeScreen extends React.Component {
         BackHandler.exitApp();  // works best when the goBack is async
         return true;
     }
+    _keyboardDidShow(that) {
+        that.setState({isTextFocused: true})
+    }
+
+    _keyboardDidHide(that) {
+        that.setState({isTextFocused: false})
+    }
+
 
     componentWillMount() {
 
-        this.setState({ requestingLocation: true });
-        this._getLocationAsync();
+        this.getLocation();
+
 
         //Location.watchPositionAsync({timeInterval: 1000*60*5,distanceInterval: 100, accuracy: Location.Accuracy.Balanced }, () =>{
         //   this._getLocationAsync()
@@ -221,11 +240,10 @@ class HomeScreen extends React.Component {
             <Badge  key={i}
                     value={elem}
                     textStyle={{fontSize: 14, fontFamily: 'noto-sans-reg'}}
-                    badgeStyle={{backgroundColor: Colors.secondaryColor, borderRadius: 7, height: 25 }}
+                    badgeStyle={gs.badgeStyle}
             />
         )
     };
-    textInputValue = null
 
     handleText = (inputText) => {
 
@@ -246,15 +264,7 @@ class HomeScreen extends React.Component {
 
     };
 
-    addNewTodo = () => {
-        const value = this.textInputValue;
 
-        if (value) {
-            //this.props.actions.addTodo(value)
-            this.input.clear()
-            this.textInputValue = null
-        }
-    }
 
     shouldShowText = () => {
         console.log("HEL");
@@ -275,7 +285,7 @@ class HomeScreen extends React.Component {
         return (
             <View style={{backgroundColor: Colors.tintColor, paddingTop: isIphoneX ? 40 : 30, paddingBottom: 10}}>
                 <View style={{ flexDirection: 'row',  backgroundColor: Colors.tintColor, alignItems: 'center',justifyContent: 'space-between'}}>
-                    <Text style={styles.headerTitleStyle}>memoriae</Text>
+                    <Text style={gs.headerTitleStyle}>memoriae</Text>
 
 
                 </View>
@@ -291,7 +301,11 @@ class HomeScreen extends React.Component {
         return true
     }
 
+    getLocation() {
+        this.setState({ requestingLocation: true, location: null });
 
+        this._getLocationAsync();
+    }
 
     render() {
         console.log("Render Home")
@@ -311,8 +325,7 @@ class HomeScreen extends React.Component {
             <ActivityIndicator size="large"/>
         </View> : <React.Fragment>
             {this.renderheader()}
-
-            <View style={styles.container}>
+            <KeyboardAvoidingView behavior={'padding'}  style={styles.container}>
 
                 <LinearGradient
                     style={{height: 10}}
@@ -328,27 +341,30 @@ class HomeScreen extends React.Component {
 
                 <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
 
-                    {this.state.text === "" ? <View style={styles.welcomeContainer}>
+                    {!this.state.isTextFocused  ? <View style={styles.welcomeContainer}>
                         <Text
                             style={styles.getStartedText}>{i18n.t('welcome', {user: this.props.screenProps.user})} </Text>
 
-                        <View style={[styles.codeHighlightContainer, styles.homeScreenFilename]}>
+                        <View style={[styles.codeHighlightContainer, styles.homeScreenFilename, {flexDirection: 'row',
+                            justifyContent: 'space-between'}]}>
 
                             <MonoText style={styles.codeHighlightText}>{text}</MonoText>
+                            {this.state.location !== null && text !== i18n.t('calculating') ?
+                                <Icon
+                                    name='reload1'
+                                    type='antdesign'
+                                    color='#009485'
+                                    onPress={() => this.getLocation()} />
+                                :
+                                undefined
+                            }
+
                         </View>
 
 
                     </View> : undefined}
 
-                    {this.state.text !== "" ? <Button
 
-                        onPress={this.submitCall}
-                        containerStyle={{alignSelf: 'flex-end', marginVertical: 5, marginRight: 24}}
-                        buttonStyle={{backgroundColor: Colors.secondaryColor, alignSelf: 'flex-start'}}
-                        title="Send"
-                        titleStyle={{fontFamily: 'space-mono'}}
-                        raised
-                    /> : undefined}
 
                     <View style={styles.badgeContainer}>
                         {this.createBadges()}
@@ -374,13 +390,39 @@ class HomeScreen extends React.Component {
                             value={this.state.text}
                             maxLength={200}
                             keyboardType={Platform.OS === 'ios' ? 'twitter' : 'default'}
-                            onFocus={(e) => console.log(e)}
                         />
 
                     </View> : undefined}
 
+                    <FlatList
+                        ref={(list) => this.horizontalFlat = list}
+                        horizontal
+                        data={[{}]}
+                        renderItem={this.cardElementRender}
+                        keyExtractor={(item, index) => {  return index } }
+                        bounces={false}
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        onMomentumScrollEnd={this._onMomentumScrollEnd}
+
+
+                    />
+
                 </ScrollView>
-            </View>
+
+                {this.state.isTextFocused || this.state.text !== "" ? <Button
+
+                    onPress={this.submitCall}
+                    containerStyle={{alignSelf: 'flex-end', margin: 20}}
+                    buttonStyle={{backgroundColor: Colors.secondaryColor,}}
+                    title="Send"
+                    titleStyle={{fontFamily: 'space-mono'}}
+                    raised
+                /> : undefined}
+
+
+
+            </KeyboardAvoidingView>
         </React.Fragment>;
     }
 
@@ -539,6 +581,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontFamily: 'noto-sans-bold',
         fontSize: 26,
+        padding: 3,
         alignSelf: 'center',
         justifyContent: 'center',
         textAlign:"center",

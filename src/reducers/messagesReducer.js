@@ -72,7 +72,7 @@ const Message  =  (state = INITIAL_STATE, action) => {
             console.log("oh shit", list);
 
             if(list !== undefined && list !== null) {
-                return { ...state, memoriaeMessage: [...state.memoriaeMessage, ...list]}
+                return { ...state, memoriaeMessage: list}
 
             }else {
                 return { ...state, loadingMemoriae: false }

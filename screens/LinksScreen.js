@@ -39,6 +39,7 @@ import Colors from "../constants/Colors";
 import i18n from 'i18n-js';
 import animation from '../assets/animations/animation-w250-h250'
 import world from '../assets/animations/animation-w1440-h1024-3-w1440-h1024-2'
+import {gs} from '../constants/GlobalStyle';
 
 const isIphoneX = (
     Platform.OS === 'ios' &&
@@ -78,15 +79,7 @@ class LinksScreen extends React.Component {
         },
         title: `memoriae`,
         headerTintColor: '#fff',
-        headerTitleStyle: {
-            fontWeight: 'bold',
-            fontFamily: 'noto-sans-bold',
-            fontSize: 26,
-            alignSelf: 'center',
-            justifyContent: 'center',
-            textAlign:"center",
-            flex:1
-        },
+        headerTitleStyle: gs.headerTitleStyle,
         header:null,
         headerRight: <RightButton/>
 
@@ -159,14 +152,14 @@ class LinksScreen extends React.Component {
             <React.Fragment>
                 <View style={{backgroundColor: Colors.tintColor, paddingTop: isIphoneX ? 40 : 30, paddingBottom: 10}}>
                     <View style={{flexDirection: 'row', backgroundColor: Colors.tintColor, alignItems: 'center', justifyContent: 'space-between'}}>
+
                         <Icon
                             underlayColor={Colors.tintColor}
-
                             name={this.state.showSearch ? "arrowright" : "md-search"}
                             size={25}
                             type={this.state.showSearch ? "antdesign" : "ionicon"}
                             color={Colors.tintColor}
-                            containerStyle={{marginLeft: 10}}
+                            containerStyle={{marginHorizontal: 10}}
                         />
 
                         {this.state.showSearch ? <SearchBar
@@ -176,27 +169,29 @@ class LinksScreen extends React.Component {
                             value={search}
                             containerStyle={{
                                 padding: 0,
-
-                                backgroundColor: Colors.tintColor, borderTopColor: Colors.tintColor,
-                                borderBottomColor: Colors.tintColor, flex: 1}}
-                        /> :  <Text style={styles.headerTitleStyle}>memoriae</Text>}
+                                backgroundColor: Colors.tintColor,
+                                borderTopColor: Colors.tintColor,
+                                borderBottomColor: Colors.tintColor,
+                                flex: 1}}
+                        /> :  <Text style={gs.headerTitleStyle}>memoriae</Text>}
 
                         <Icon
                             underlayColor={Colors.tintColor}
                             onPress={() => {
-                                this.setState({showSearch: !this.state.showSearch} )
+                                this.setState({showSearch: !this.state.showSearch});
                                 this.updateSearch('');
-                            } }
+                            }}
                             name={this.state.showSearch ? "arrowright" : "md-search"}
                             size={25}
                             type={this.state.showSearch ? "antdesign" : "ionicon"}
                             color="white"
-                            containerStyle={{marginRight: 10}}
+                            containerStyle={{marginHorizontal: 10}}
                         />
 
                     </View>
 
                     <View style={{backgroundColor: Colors.tintColor, marginBottom: 0}}>
+
                         <FlatList
                             ref={(list) => this.horizontalFlat = list}
                             horizontal
@@ -204,14 +199,13 @@ class LinksScreen extends React.Component {
                             renderItem={this.renderHashFilter}
                             keyExtractor={(item, index) => {  return index } }
                             bounces={false}
-
                         />
+
+
                     </View>
 
-
-
-
                 </View>
+
                 <LinearGradient
                     style={{height: 10}}
                     colors={['#009485',  '#9BE4DC',  '#009485']}
@@ -219,8 +213,8 @@ class LinksScreen extends React.Component {
                     end={{x: 0, y: 0}}
                 >
 
-
                     <View style={{height: 10}}/>
+
                 </LinearGradient>
 
             </React.Fragment>
@@ -361,7 +355,7 @@ class LinksScreen extends React.Component {
             <Badge
                 onPress={() => this.addHashtagToList(elem.toLowerCase())}
                 key={i}
-                badgeStyle={{backgroundColor: Colors.secondaryColor, borderRadius: 7, height: 25 }}
+                badgeStyle={gs.badgeStyle}
                 textStyle={{fontSize: 16}}
                 value={elem}/>
         )
@@ -590,14 +584,10 @@ class LinksScreen extends React.Component {
         )
     };
 
-
     render() {
-
         let hashTxt = this.renderHashtagsText();
         return  (
-
             <React.Fragment >
-
                 <View style={styles.animationContainerBack}>
                     <View
                         style={{
@@ -605,18 +595,10 @@ class LinksScreen extends React.Component {
                             height: height/1.3,
                         }}
                     >
-
                     </View>
-
                 </View>
                 {this.renderSearch()}
-
-
-
                 <View  style={{backgroundColor: 'transparent'}}>
-
-
-
 
                     <FlatList
                         style={{backgroundColor: 'transparent', borderTopLeftRadius: 20, borderTopRightRadius: 20}}
@@ -768,6 +750,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontFamily: 'noto-sans-bold',
         fontSize: 26,
+        padding: 3,
         alignSelf: 'center',
         justifyContent: 'center',
         textAlign:"center",
